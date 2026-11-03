@@ -4,7 +4,7 @@
 **Version:** 0.1
 **Contract:** `contracts/Presense.py`
 **Runtime:** `py-genlayer` (magic comment below)
-**Status:** Specification — no implementation yet
+**Status:** Phase 1 implemented (manifest core); lifecycle pending.
 
 ---
 
@@ -486,6 +486,7 @@ def __receive__(self) -> None:
 
 | Method | ID argument | Returns | Purpose |
 |---|---|---|---|
+| `check_manifest(manifest_json: str)` | — (raw JSON) | `typing.Any` | Dry-run validation; returns canonical string, SHA-256, and criterion count. |
 | `get_agreement(id: str)` | Agreement ID | `typing.Any` | Structured agreement. |
 | `get_agreement_json(id: str)` | Agreement ID | `str` | Canonical JSON for debugging. |
 | `get_manifest(id: str)` | Agreement ID | `str` | Canonical manifest JSON. |
@@ -501,6 +502,18 @@ def __receive__(self) -> None:
 | `preview_payout(id: str)` | Agreement ID | `typing.Any` | Buyer/seller payout from the latest verdict. |
 
 Use `get_agreement(id).verdict_id` to find the verdict ID, `get_agreement(id).submission_id` for the submission ID, and `get_agreement(id).challenge_id` for the challenge ID. View methods must not mutate state and must not call `gl.nondet`.
+
+`check_manifest` runs the exact parser and validator used by `create_agreement` and returns:
+
+```json
+{
+  "canonical": "{\"criteria\":[...],...}",
+  "hash": "sha256...",
+  "criteria": 5
+}
+```
+
+It never stores state, so clients can validate a manifest before paying gas.
 
 ---
 
@@ -541,6 +554,8 @@ Use `get_agreement(id).verdict_id` to find the verdict ID, `get_agreement(id).su
 | `evidence_policy` | object | yes | See §6.5. |
 | `metadata` | object | no | Arbitrary JSON; not used for scoring. |
 
+Unknown fields are rejected at every schema level. Put vendor extensions under `metadata`, never beside a defined field.
+
 ### 6.3 Criterion
 
 ```json
@@ -568,6 +583,8 @@ Use `get_agreement(id).verdict_id` to find the verdict ID, `get_agreement(id).su
 | `weight` | integer | yes | 1–100; sum of all weights = 100. |
 | `mandatory` | boolean | yes | If true, failure forces `REJECT`. |
 | `params` | object | yes | Check-specific. |
+
+`kind` must match the check classification in §7: the first four checks are `objective`; `llm_rubric` is `subjective`.
 
 ### 6.4 Decision policy
 
@@ -852,7 +869,7 @@ If the quote is not found, the result is a failure, even if the score is high.
 | `E_CHALLENGE_WINDOW_OPEN` | Settlement attempted before the window closes. |
 | `E_ALREADY_SUBMITTED` | Expiry attempted after submission. |
 | `E_EVIDENCE_MISSING` | Required evidence could not be fetched. |
-| `E_CHECK_UNSUPPORTED` | Manifest uses an unknown check. |
+| `E_CHECK_UNSUPPORTED` | Evaluation encounters a check type it cannot execute. Manifest creation rejects unknown checks as `E_MANIFEST_INVALID`. |
 | `E_UNDETERMINED` | Consensus could not produce a reliable verdict. |
 | `E_CLAIM_ZERO` | Withdraw called with no claim. |
 | `E_BAD_RECIPIENT_KIND` | Withdraw kind is not `"evm"` or `"ic"`. |
@@ -907,6 +924,7 @@ Rules:
 - Reject non-object top level.
 - Reject trailing content after the JSON value.
 - Reject a canonical form larger than `MAX_MANIFEST_BYTES`.
+- Reject unknown fields at the top level, criterion level, policy level, and check-param level.
 - Store `canonical` as `manifest_json`.
 
 This guarantees `manifest_hash == sha256(manifest_json)` forever.

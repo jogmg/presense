@@ -35,35 +35,56 @@
 
 ## 3. Phase 0 — Setup
 
+**Status: complete.**
+
 ### Tasks
 
-- [ ] Create `contracts/`, `tests/direct/`, `tests/integration/`, `deploy/`, `examples/`.
-- [ ] Add `requirements.txt`:
+- [x] Create `contracts/`, `tests/direct/`, `tests/integration/`, `deploy/`, `examples/`.
+- [x] Add `requirements.txt`:
   ```text
-  genlayer-test
-  pytest
-  pytest-cov
+  genlayer-test==0.29.2
+  genvm-linter==0.11.0
+  pytest>=9,<10
+  pytest-cov>=7,<8
   ```
-- [ ] Add `.gitignore` for `.venv/`, `__pycache__/`, `.pytest_cache/`, `*.pyc`, `.env`.
-- [ ] Add `pyproject.toml` or `pytest.ini` with test paths.
-- [ ] Add the contract magic comment.
-- [ ] Add a minimal `Presense.py` with `__init__` only.
-- [ ] Verify `genvm-lint check` runs.
-- [ ] Verify `pytest` discovers an empty test file.
+- [x] Add `.gitignore` for `.venv/`, `__pycache__/`, `.pytest_cache/`, `*.pyc`, `.env`, artifacts, and local config.
+- [x] Add `pyproject.toml` with test paths and coverage settings.
+- [x] Add the contract magic comment.
+- [x] Add a minimal `Presense.py` with `__init__` and `get_version` view.
+- [x] Verify `genvm-lint check` runs.
+- [x] Verify `pytest` discovers and passes the smoke test.
+- [x] Add `tests/conftest.py` shims for the pinned toolchain.
 
 ### Deliverable
 
-A repository that lints and runs an empty test suite.
+A repository that lints, validates, and runs a one-test direct suite.
 
 ### Definition of done
 
-- [ ] `genvm-lint check contracts/Presense.py` exits 0.
-- [ ] `pytest tests/direct/ -v` exits 0 (no tests or one trivial test).
-- [ ] The magic comment is present and exact.
+- [x] `genvm-lint check contracts/Presense.py` exits 0.
+- [x] `pytest tests/direct/ -v` exits 0 (one trivial test).
+- [x] The magic comment is present and exact.
+
+### Verified locally
+
+```text
+✓ Lint passed (3 checks)
+✓ Validation passed
+  Contract: Presense
+  Methods: 1 (1 view, 0 write)
+
+tests/direct/test_smoke.py::test_contract_deploys_and_reports_version PASSED
+1 passed
+```
+
+Environment: Python 3.13.7, Windows, `genlayer-test 0.29.2`,
+`genvm-linter 0.11.0`, `pytest 9.2.0`.
 
 ---
 
 ## 4. Phase 1 — Manifest core
+
+**Status: complete.**
 
 ### Goal
 
@@ -71,31 +92,32 @@ Make the acceptance manifest the most rigorously validated object in the system.
 
 ### Tasks
 
-- [ ] Define constants.
-- [ ] Implement strict JSON parsing:
+- [x] Define constants.
+- [x] Implement strict JSON parsing:
   - reject duplicate keys,
   - reject `NaN`/`Infinity`,
   - reject non-object top level,
   - reject trailing content.
-- [ ] Implement canonicalization:
+- [x] Implement canonicalization:
   - `sort_keys=True`,
   - `separators=(",", ":")`,
   - `ensure_ascii=False`.
-- [ ] Compute SHA-256.
-- [ ] Enforce 16 KiB cap on canonical bytes.
-- [ ] Validate top-level fields.
-- [ ] Validate criteria:
+- [x] Compute SHA-256.
+- [x] Enforce 16 KiB cap on raw and canonical bytes.
+- [x] Validate top-level fields.
+- [x] Validate criteria:
   - count 1–20,
   - unique IDs,
   - kinds,
   - checks,
   - weights sum 100,
   - mandatory flag.
-- [ ] Validate decision policy.
-- [ ] Validate evidence policy.
-- [ ] Validate URLs and domains.
-- [ ] Write `parse_manifest(raw: str) -> ParsedManifest`.
-- [ ] Write unit tests for every rejection case.
+- [x] Validate decision policy.
+- [x] Validate evidence policy.
+- [x] Validate URLs and domains.
+- [x] Write `parse_manifest(raw: str) -> ParsedManifest`.
+- [x] Write unit tests for every rejection case.
+- [x] Expose `check_manifest` as a read-only dry-run view.
 
 ### Deliverable
 
@@ -103,15 +125,27 @@ Make the acceptance manifest the most rigorously validated object in the system.
 
 ### Definition of done
 
-- [ ] All §5.1 tests pass.
-- [ ] Canonicalization is stable across key order.
-- [ ] The hash matches the stored canonical string.
-- [ ] No `dict` or `list` is used for persistent storage.
-- [ ] Invalid manifests never reach state.
+- [x] All §5.1 tests pass.
+- [x] Canonicalization is stable across key order.
+- [x] The hash matches the stored canonical string.
+- [x] No `dict` or `list` is used for persistent storage.
+- [x] Invalid manifests never reach state.
+
+### Verified locally
+
+```text
+✓ Lint passed (3 checks)
+✓ Validation passed
+  Contract: Presense
+  Methods: 3 (3 view, 0 write)
+
+95 passed
+contracts/Presense.py  96% coverage (branches included)
+```
 
 ### Design note
 
-Keep the parser as a pure helper. The contract method calls it, but the parser does not read contract state. This makes it easy to test and reuse in the manifest linter.
+Keep the parser as a pure helper. The contract method calls it, but the parser does not read contract state. `check_manifest` applies the exact same parser and validator that `create_agreement` will call in Phase 2.
 
 ---
 

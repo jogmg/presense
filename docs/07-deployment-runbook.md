@@ -35,16 +35,15 @@ python -m venv .venv
 source .venv/bin/activate
 
 pip install -r requirements.txt
-pip install pytest pytest-cov
 ```
 
-`requirements.txt` should include:
+`requirements.txt` pins the tested toolchain:
 
 ```text
-genlayer-test
-genvm-linter
-pytest
-pytest-cov
+genlayer-test==0.29.2
+genvm-linter==0.11.0
+pytest>=9,<10
+pytest-cov>=7,<8
 ```
 
 The linter is provided by `genvm-linter`. Verify:
@@ -61,6 +60,11 @@ pytest tests/direct/ -v
 ```
 
 Do not proceed to Bradbury until both pass.
+
+`tests/conftest.py` includes two compatibility shims for the pinned
+`genlayer-test` release: a fallback to GenVM's renamed runner bundle and a
+Windows-safe temp-file cleanup. Set `PRESENSE_SKIP_TOOLCHAIN_SHIMS=1` to
+disable them after upgrading the toolchain.
 
 ---
 
@@ -136,7 +140,11 @@ genlayer account show
 
 ### 3.4 `gltest.config.yaml`
 
-Integration tests read network accounts from `gltest.config.yaml`:
+Integration tests read network accounts from `gltest.config.yaml`. The repository ships a safe template:
+
+```bash
+cp gltest.config.yaml.example gltest.config.yaml
+```
 
 ```yaml
 networks:
@@ -145,7 +153,9 @@ networks:
       - "${ACCOUNT_PRIVATE_KEY_1}"
 ```
 
-Use environment variables, keep the file out of git if it contains secrets, and confirm the network key matches the `gltest` command (`testnet_bradbury` with an underscore; the CLI alias is `testnet-bradbury` with a hyphen).
+The real `gltest.config.yaml` is ignored by git. Use environment variables, keep the file out of git if it contains secrets, and confirm the network key matches the `gltest` command (`testnet_bradbury` with an underscore; the CLI alias is `testnet-bradbury` with a hyphen).
+
+Direct-mode tests do not need this file. If it is absent, `pytest tests/direct/` runs with the default local configuration.
 
 ---
 
@@ -167,12 +177,8 @@ pytest tests/direct/ -v
 
 Expected:
 
-- manifest tests pass,
-- lifecycle tests pass,
-- objective check tests pass,
-- validator tests pass,
-- settlement tests pass,
-- security tests pass.
+- Phase 1: all manifest parsing, canonicalization, policy, URL, and check-param tests pass.
+- Later phases add lifecycle, objective-check, validator, settlement, and security tests.
 
 ### 4.3 Coverage
 
@@ -180,7 +186,7 @@ Expected:
 pytest tests/direct/ --cov=contracts --cov-report=term-missing
 ```
 
-Target: ≥ 85% for `contracts/Presense.py`.
+Target: ≥ 85% for `contracts/Presense.py`. Current Phase 1 result: 96%.
 
 ### 4.4 GLSim (optional, fast)
 

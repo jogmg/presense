@@ -4,7 +4,44 @@
 
 Presense is a reusable GenLayer Intelligent Contract primitive that adjudicates whether agent-delivered work satisfies an agreed **Acceptance Manifest** (the Acceptance Test Manifest), then settles escrow according to a structured verdict.
 
-> **Status:** Specification phase (`v0.1`). No contract code has been written yet. This repository currently contains the complete build and deployment documentation.
+> **Status:** Phase 1 complete. The repository contains the full specification, a strict manifest parser with canonicalization and SHA-256, and 95 passing direct-mode tests. Lifecycle and escrow begin in Phase 2.
+
+---
+
+## Current verification
+
+Run from the project root:
+
+```bash
+python -m venv .venv
+.venv/Scripts/python -m pip install -r requirements.txt   # Windows
+# source .venv/bin/activate && pip install -r requirements.txt  # macOS/Linux
+
+genvm-lint check contracts/Presense.py
+pytest tests/direct/ -v
+```
+
+Expected:
+
+```text
+✓ Lint passed (3 checks)
+✓ Validation passed
+  Contract: Presense
+  Methods: 3 (3 view, 0 write)
+95 passed
+```
+
+For coverage:
+
+```bash
+pytest tests/direct/ --cov=contracts --cov-report=term-missing
+```
+
+Current result: 96% statement and branch coverage for `contracts/Presense.py`.
+
+`tests/conftest.py` carries two narrow shims for `genlayer-test 0.29.2`:
+a fallback for GenVM's renamed runner bundle, and a Windows-safe temp-file
+cleanup. They can be removed when the upstream toolchain handles both cases.
 
 ---
 
@@ -85,8 +122,10 @@ sequenceDiagram
 presense/
 ├── README.md
 ├── LICENSE
-├── requirements.txt   # (to be created) test and lint dependencies
-├── gltest.config.yaml # (to be created) integration network accounts
+├── requirements.txt
+├── pyproject.toml
+├── .gitignore
+├── gltest.config.yaml.example # integration network account template
 ├── docs/
 │   ├── 00-product-brief.md
 │   ├── 01-architecture.md
@@ -99,12 +138,16 @@ presense/
 │   ├── 08-portal-submission.md
 │   ├── 09-roadmap-and-grants.md
 │   └── 10-glossary-and-references.md
-├── contracts/        # (to be created) Presense.py
+├── contracts/
+│   └── Presense.py    # manifest core; lifecycle pending
 ├── tests/
-│   ├── direct/       # (to be created) fast in-memory tests
-│   └── integration/  # (to be created) gltest tests
-├── deploy/           # (to be created) deployment scripts
-└── examples/         # (to be created) manifests, payloads, demos
+│   ├── conftest.py    # toolchain compatibility shims
+│   ├── direct/
+│   │   ├── test_manifest.py
+│   │   └── test_smoke.py
+│   └── integration/   # live-network tests (planned)
+├── deploy/            # deployment scripts (planned)
+└── examples/          # manifests and payloads (planned)
 ```
 
 ---
@@ -169,27 +212,33 @@ These are sequenced in [09 — Roadmap & Grants](docs/09-roadmap-and-grants.md).
 
 ---
 
-## Quickstart (after implementation)
+## Quickstart
 
 ```bash
-# 1. Install
+# 1. Install (use the project virtual environment)
+python -m venv .venv
 pip install -r requirements.txt
 
-# 2. Lint
+# 2. Lint and validate
 genvm-lint check contracts/Presense.py
 
-# 3. Fast tests
+# 3. Fast tests (runs today)
 pytest tests/direct/ -v
 
-# 4. Local integration
+# 4. Local integration (once Phase 4 lands)
 gltest tests/integration/ -v -s --network localnet
 
-# 5. Deploy to Bradbury
+# 5. Deploy to Bradbury (once the interface stabilizes)
 genlayer network set testnet-bradbury
 genlayer deploy --contract contracts/Presense.py
 ```
 
-> These commands become runnable once Phases 1–5 in the [implementation plan](docs/06-implementation-plan.md) are complete.
+> Steps 2 and 3 are runnable now. Steps 4 and 5 become runnable as the
+> lifecycle and consensus phases in the
+> [implementation plan](docs/06-implementation-plan.md) are completed.
+>
+> On Windows, prefix `genvm-lint` with `$env:PYTHONIOENCODING="utf-8"` if the
+> CLI fails while printing Unicode output.
 
 ---
 

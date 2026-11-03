@@ -69,7 +69,27 @@ gltest tests/integration/ -v -s --network testnet_bradbury
 genvm-lint check contracts/Presense.py
 ```
 
-### 3.3 Direct-mode capabilities
+### 3.3 Toolchain compatibility
+
+The toolchain is pinned in `requirements.txt`. Two compatibility shims live in
+`tests/conftest.py` and are disabled with
+`PRESENSE_SKIP_TOOLCHAIN_SHIMS=1`:
+
+1. **Runner bundle fallback.** GenVM 0.3.0 renamed
+   `genvm-universal.tar.xz` to `genvm-runners-all.tar.xz`. `genlayer-test
+   0.29.2` still requests the old asset and receives a 404. The shim retries
+   the renamed asset and saves it under the loader's expected filename.
+2. **Windows stdin cleanup.** The direct loader unlinks a temp file while fd 0
+   still holds it. Windows forbids that (`WinError 32`); the shim swallows only
+   that error.
+
+Runner hash note: `genvm-linter 0.11.0` can download the newest runner bundle
+but cannot validate the newest `py-genlayer` runner, because that runner no
+longer exposes `genlayer.py.get_schema`. The contract therefore stays on the
+last validator-compatible runner hash. Revisit when `genvm-linter` ships
+support for the new layout.
+
+### 3.4 Direct-mode capabilities
 
 The GenLayer testing suite’s direct mode runs the contract in memory. Use it for:
 
@@ -96,8 +116,8 @@ Those require integration and Bradbury tests.
 
 ```text
 tests/
+├── conftest.py        # shared fixtures and toolchain shims
 ├── direct/
-│   ├── conftest.py
 │   ├── test_manifest.py
 │   ├── test_lifecycle.py
 │   ├── test_checks_objective.py
@@ -206,6 +226,8 @@ def make_manifest(**overrides):
 ## 5. Unit tests
 
 ### 5.1 Manifest parsing
+
+**Status: implemented** in `tests/direct/test_manifest.py` (95 direct tests total after Phase 1).
 
 | Test | Input | Expected |
 |---|---|---|

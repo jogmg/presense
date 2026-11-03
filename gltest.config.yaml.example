@@ -1,0 +1,9 @@
+# Integration test accounts.
+# Keep keys in environment variables; never commit a funded private key.
+networks:
+  localnet:
+    accounts:
+      - "${ACCOUNT_PRIVATE_KEY_1}"
+  testnet_bradbury:
+    accounts:
+      - "${ACCOUNT_PRIVATE_KEY_1}"

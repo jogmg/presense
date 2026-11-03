@@ -1,0 +1,18 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-ra"
+markers = [
+    "direct: fast in-memory contract tests",
+    "integration: tests against a running GenLayer network",
+]
+
+[tool.coverage.run]
+source = ["contracts"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
