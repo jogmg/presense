@@ -294,17 +294,17 @@ def make_manifest(**overrides):
 
 ## 7. Objective check tests
 
-Mock the web response for each URL.
+Mock the web response for each URL with `vm.mock_web(...)`. The Phase 3 direct suite is `tests/direct/test_checks_objective.py`; it exercises `preview_objective_checks` inside `strict_eq` and verifies that the operation does not mutate agreement state.
 
 ### 7.1 `http_status`
 
-| Test           | Mock                         | Expected                   |
-| -------------- | ---------------------------- | -------------------------- |
-| Pass 200       | `200`                        | `passed = true`.           |
-| Fail 500       | `500`                        | `passed = false`.          |
-| Accept list    | `204`, expected `[200, 204]` | `passed = true`.           |
-| Network error  | raise timeout                | `MISSING`; policy applies. |
-| Oversized body | > cap                        | `MISSING`.                 |
+| Test           | Mock                                 | Expected                                                      |
+| -------------- | ------------------------------------ | ------------------------------------------------------------- |
+| Pass 200       | `200`                                | `passed = true`.                                              |
+| Fail 500       | `500`                                | `passed = false`.                                             |
+| Accept list    | `204`, expected `[200, 204]`         | `passed = true`.                                              |
+| Network error  | no matching mock / request exception | `MISSING`; decision policy is applied by the verdict builder. |
+| Oversized body | > cap                                | `MISSING`.                                                    |
 
 ### 7.2 `json_has_keys`
 
@@ -335,6 +335,8 @@ Mock the web response for each URL.
 | Case-insensitive     | `AUTHENTICATION`       | `passed = true` with default.   |
 | Case-sensitive       | `AUTHENTICATION`       | `passed = false` when enabled.  |
 | Whitespace collapsed | `auth\n\nrate   limit` | Passes for `"auth rate limit"`. |
+
+Redirect tests cover visible 3xx responses, disallowed destinations, and the configured hop cap. Direct mode cannot establish whether the live web backend transparently follows redirects; it also cannot test the backend's fixed timeout. The pinned SDK provides no redirect or timeout request options and no final-URL response field, so those remain runtime-level validation gaps.
 
 ---
 

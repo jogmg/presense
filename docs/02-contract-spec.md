@@ -4,7 +4,7 @@
 **Version:** 0.1
 **Contract:** `contracts/Presense.py`
 **Runtime:** `py-genlayer` (magic comment below)
-**Status:** Phases 1 and 2 implemented (manifest core and lifecycle/escrow); evaluation pending.
+**Status:** Phases 1–3 implemented (manifest core, lifecycle/escrow, objective checks); verdict evaluation and consensus pending.
 
 ---
 
@@ -299,7 +299,20 @@ def submit_delivery(
 
 ---
 
-### 4.5 `evaluate`
+### 4.5 `preview_objective_checks`
+
+```python
+@gl.public.write
+def preview_objective_checks(self, agreement_id: str) -> typing.Any:
+```
+
+**Auth:** anyone. The agreement must be `SUBMITTED` or `DISPUTED` (`E_INVALID_STATE` otherwise).
+
+**Execution:** Runs each objective criterion against independently fetched evidence inside `strict_eq`. Returns one structured result per objective criterion with `criterion_id`, `kind`, `check`, `passed`, `score`, `weight`, `reason`, `evidence_url`, `evidence_quote`, and `status` (`PASS`, `FAIL`, or `MISSING`). This method does not store a verdict or change agreement state. Missing-evidence decision policy is applied by the later verdict builder, not by this preview method.
+
+The pinned `gl.nondet.web.Response` exposes only `status`, `headers`, and `body`; the request API exposes no timeout or redirect option and the response has no final URL. Presense follows and validates redirect responses that the SDK exposes, including each destination's HTTPS/domain policy and the configured cap. It cannot verify redirects transparently followed by the web backend. Until the runtime exposes a final URL or disables automatic redirects, manifests should use direct final-resource URLs; this limitation remains open for production hardening.
+
+### 4.6 `evaluate`
 
 ```python
 @gl.public.write
@@ -337,7 +350,7 @@ def evaluate(self, agreement_id: str) -> str:
 
 ---
 
-### 4.6 `challenge`
+### 4.7 `challenge`
 
 ```python
 @gl.public.write
@@ -375,7 +388,7 @@ def challenge(
 
 ---
 
-### 4.7 `settle`
+### 4.8 `settle`
 
 ```python
 @gl.public.write
@@ -403,7 +416,7 @@ def settle(self, agreement_id: str) -> None:
 
 ---
 
-### 4.8 `claim_expired`
+### 4.9 `claim_expired`
 
 ```python
 @gl.public.write
@@ -428,7 +441,7 @@ def claim_expired(self, agreement_id: str) -> None:
 
 ---
 
-### 4.9 `withdraw`
+### 4.10 `withdraw`
 
 ```python
 @gl.public.write
@@ -468,7 +481,7 @@ class _Recipient:
 
 ---
 
-### 4.10 Direct value transfers
+### 4.11 Direct value transfers
 
 Presense does not define a `__receive__` handler. GenVM's default dispatcher rejects value-only calls when no receive handler is present, so funding must go through the payable `create_agreement` method. The pinned `genvm-linter 0.11.0` rejects public methods with double-underscore names, so this runtime rejection does not carry a custom `E_DIRECT_TRANSFER` error code.
 

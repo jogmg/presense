@@ -4,7 +4,7 @@
 
 Presense is a reusable GenLayer Intelligent Contract primitive that adjudicates whether agent-delivered work satisfies an agreed **Acceptance Manifest** (the Acceptance Test Manifest), then settles escrow according to a structured verdict.
 
-> **Status:** Phase 2 complete. The repository contains the strict manifest parser, canonicalization and SHA-256, plus the agreement and escrow-claim lifecycle. Evaluation and verdict consensus are later phases.
+> **Status:** Phases 0–2 are complete. Phase 3 adds deterministic objective checks and a non-mutating preview write. Verdict construction, validator comparison, and settlement remain later phases.
 
 ---
 
@@ -27,8 +27,8 @@ Expected:
 ✓ Lint passed (3 checks)
 ✓ Validation passed
   Contract: Presense
-  Methods: 14 (8 view, 6 write)
-108 passed
+  Methods: 15 (8 view, 7 write)
+118 passed
 ```
 
 For coverage:
@@ -37,7 +37,7 @@ For coverage:
 pytest tests/direct/ --cov=contracts --cov-report=term-missing
 ```
 
-Current result: 96% statement and branch coverage for `contracts/Presense.py`.
+Current result: 93% statement and branch coverage for `contracts/Presense.py`.
 
 `tests/conftest.py` carries two narrow shims for `genlayer-test 0.29.2`:
 a fallback for GenVM's renamed runner bundle, and a Windows-safe temp-file

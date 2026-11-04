@@ -211,28 +211,29 @@ The contract intentionally has no `__receive__` handler: GenVM rejects value-onl
 
 ## 6. Phase 3 — Objective checks
 
+**Status: implemented with a documented runtime limitation.** The checks and mocked direct-mode coverage are in place. Final-domain verification for redirects transparently followed by the web backend and control of the backend timeout remain unresolved in the pinned SDK.
+
 ### Goal
 
 Deterministic evidence checks with a strict fetch policy.
 
 ### Tasks
 
-- [ ] Implement `_fetch(url, policy) -> FetchResult`.
-- [ ] Enforce:
-  - HTTPS,
-  - allowed domains,
-  - max bytes per source,
-  - max total bytes,
-  - redirect cap and final-domain check,
-  - timeout handling.
-- [ ] Implement `http_status`.
-- [ ] Implement `json_has_keys` with dot-path support.
-- [ ] Implement `file_hash`.
-- [ ] Implement `text_contains` with normalization.
-- [ ] Implement `MISSING` vs `FAIL` classification.
-- [ ] Mock web responses in direct mode.
-- [ ] Write tests for pass, fail, missing, oversize, bad domain, redirect.
-- [ ] Wire checks into a `_run_objective(criterion, evidence_policy)` helper.
+- [x] Implement `_fetch(url, policy)` with a shared evaluation byte budget.
+- [x] Enforce HTTPS and allowed domains for source URLs and each visible redirect destination.
+- [x] Enforce per-source and cumulative byte caps before parsing response bodies.
+- [x] Enforce redirect hop cap for visible 3xx responses.
+- [x] Treat web request exceptions, including runtime timeouts, as `MISSING`; custom timeout values are not supported by the pinned SDK.
+- [x] Implement `http_status`, including `GET` and `HEAD`.
+- [x] Implement `json_has_keys` with dot paths, array indexes, and optional types.
+- [x] Implement `file_hash`.
+- [x] Implement `text_contains` with whitespace and case normalization.
+- [x] Implement `MISSING` vs `FAIL` classification.
+- [x] Mock web responses in direct mode.
+- [x] Write tests for pass, fail, missing, oversize, total cap, disallowed redirect, and redirect cap.
+- [x] Wire checks into `_run_objective(criterion, evidence_policy)` and `preview_objective_checks`.
+- [ ] Confirm the web backend does not transparently follow redirects, or update the runtime/API to expose a final URL or disable redirects.
+- [ ] Apply `missing_evidence` policy when the Phase 4/5 verdict builder consumes objective results.
 
 ### Deliverable
 
@@ -240,15 +241,15 @@ Four objective checks that return structured results and never crash the evaluat
 
 ### Definition of done
 
-- [ ] All §7 tests pass.
-- [ ] Fetch caps are enforced before parsing.
-- [ ] Missing evidence follows the policy.
-- [ ] No LLM is used for objective checks.
-- [ ] Each result includes `criterion_id`, `passed`, `score`, `reason`, `evidence_url`.
+- [x] All implemented §7 objective tests pass.
+- [x] Fetch caps are enforced before parsing.
+- [ ] Missing evidence follows the policy in the verdict builder.
+- [x] No LLM is used for objective checks.
+- [x] Each result includes `criterion_id`, `passed`, `score`, `reason`, `evidence_url`.
 
 ### Design note
 
-Use `gl.nondet.web.get` or `request` inside the non-deterministic block. Do not fetch in a view method. Do not cache evidence across transactions.
+Use `gl.nondet.web.request` inside the non-deterministic block. Do not fetch in a view method. Do not cache evidence across transactions. The pinned response exposes `status`, `headers`, and `body` only; no final URL or timeout/redirect controls are available. `preview_objective_checks` is a write operation because it performs network access and uses strict equivalence, but it does not persist results.
 
 ---
 

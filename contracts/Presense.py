@@ -8,6 +8,7 @@ import hashlib
 import json
 import re
 import typing
+from urllib.parse import urljoin
 
 
 MANIFEST_SCHEMA = "presense.manifest.v1"
@@ -702,6 +703,282 @@ def validate_manifest(parsed: dict[str, typing.Any]) -> None:
         )
 
 
+def _response_header(headers: dict[str, typing.Any], name: str) -> typing.Any:
+    target = name.lower()
+    for key, value in headers.items():
+        if isinstance(key, str) and key.lower() == target:
+            if isinstance(value, bytes):
+                try:
+                    return value.decode("ascii")
+                except UnicodeDecodeError:
+                    return None
+            return value
+    return None
+
+
+def _missing_fetch(
+    reason: str,
+    url: str,
+    bytes_fetched: int = 0,
+    budget: dict[str, int] | None = None,
+    bytes_used: int = 0,
+    additional_bytes: int = 0,
+) -> dict[str, typing.Any]:
+    if budget is not None:
+        budget["bytes_used"] = bytes_used + bytes_fetched + additional_bytes
+    return {
+        "status": "MISSING",
+        "http_status": 0,
+        "body": b"",
+        "url": url,
+        "bytes_fetched": bytes_fetched,
+        "reason": reason,
+    }
+
+
+def _fetch(
+    url: str,
+    policy: dict[str, typing.Any],
+    budget: dict[str, int] | None = None,
+    method: str = "GET",
+) -> dict[str, typing.Any]:
+    """Fetch one source within policy caps; caller may share a budget across checks."""
+    domains = [
+        _normalize_domain(domain, "evidence_policy.allowed_domains")
+        for domain in policy["allowed_domains"]
+    ]
+    source_limit = min(policy["max_bytes_per_source"], MAX_SOURCE_BYTES)
+    total_limit = min(policy["max_total_bytes"], MAX_TOTAL_BYTES)
+    bytes_used = budget.get("bytes_used", 0) if budget is not None else 0
+    current_url = url
+    redirects = 0
+    source_bytes = 0
+
+    while True:
+        try:
+            _validate_url(current_url, domains, "evidence URL")
+            response = gl.nondet.web.request(current_url, method=method)
+            status = int(response.status)
+            headers = response.headers
+            body = response.body if response.body is not None else b""
+            if not isinstance(body, bytes):
+                return _missing_fetch("invalid response body", current_url, source_bytes)
+        except Exception:
+            return _missing_fetch(
+                "network request failed", current_url, source_bytes, budget, bytes_used
+            )
+
+        body_size = len(body)
+        length_header = _response_header(headers, "content-length")
+        if length_header is not None:
+            try:
+                content_length = int(length_header)
+            except (TypeError, ValueError):
+                return _missing_fetch(
+                    "invalid content-length",
+                    current_url,
+                    source_bytes,
+                    budget,
+                    bytes_used,
+                    body_size,
+                )
+            if content_length < 0 or content_length > source_limit - source_bytes:
+                return _missing_fetch(
+                    "source exceeds byte limit",
+                    current_url,
+                    source_bytes,
+                    budget,
+                    bytes_used,
+                    body_size,
+                )
+            if content_length > total_limit - bytes_used - source_bytes:
+                return _missing_fetch(
+                    "total evidence exceeds byte limit",
+                    current_url,
+                    source_bytes,
+                    budget,
+                    bytes_used,
+                    body_size,
+                )
+
+        if body_size > source_limit - source_bytes:
+            return _missing_fetch(
+                "source exceeds byte limit",
+                current_url,
+                source_bytes,
+                budget,
+                bytes_used,
+                body_size,
+            )
+        if body_size > total_limit - bytes_used - source_bytes:
+            return _missing_fetch(
+                "total evidence exceeds byte limit",
+                current_url,
+                source_bytes,
+                budget,
+                bytes_used,
+                body_size,
+            )
+
+        source_bytes += body_size
+        if status in (301, 302, 303, 307, 308):
+            if not policy["allow_redirects"]:
+                return _missing_fetch(
+                    "redirects are disabled", current_url, source_bytes, budget, bytes_used
+                )
+            if redirects >= policy["max_redirects"]:
+                return _missing_fetch(
+                    "redirect limit exceeded", current_url, source_bytes, budget, bytes_used
+                )
+            location = _response_header(headers, "location")
+            if not isinstance(location, str) or not location:
+                return _missing_fetch(
+                    "redirect has no location", current_url, source_bytes, budget, bytes_used
+                )
+            current_url = urljoin(current_url, location)
+            if status == 303:
+                method = "GET"
+            redirects += 1
+            continue
+
+        if budget is not None:
+            budget["bytes_used"] = bytes_used + source_bytes
+        return {
+            "status": "OK",
+            "http_status": status,
+            "body": body,
+            "url": current_url,
+            "bytes_fetched": source_bytes,
+            "reason": "",
+        }
+
+
+def _json_path_value(data: typing.Any, path: str) -> tuple[bool, typing.Any]:
+    value = data
+    for segment in path.split("."):
+        match = re.match(r"^([^\[\]]+)(?:\[(\d+)\])?$", segment)
+        if match is None or not isinstance(value, dict) or match.group(1) not in value:
+            return False, None
+        value = value[match.group(1)]
+        if match.group(2) is not None:
+            if not isinstance(value, list):
+                return False, None
+            index = int(match.group(2))
+            if index >= len(value):
+                return False, None
+            value = value[index]
+    return True, value
+
+
+def _json_type_matches(value: typing.Any, expected: str) -> bool:
+    if expected == "null":
+        return value is None
+    if expected == "boolean":
+        return isinstance(value, bool)
+    if expected == "number":
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+    if expected == "string":
+        return isinstance(value, str)
+    if expected == "object":
+        return isinstance(value, dict)
+    if expected == "array":
+        return isinstance(value, list)
+    return False
+
+
+def _objective_result(
+    criterion: dict[str, typing.Any],
+    passed: bool,
+    status: str,
+    reason: str,
+    evidence_url: str,
+) -> dict[str, typing.Any]:
+    return {
+        "criterion_id": criterion["id"],
+        "kind": "objective",
+        "check": criterion["check"],
+        "passed": passed,
+        "score": 10 if passed else 0,
+        "weight": criterion["weight"],
+        "reason": reason[:MAX_REASON_CHARS],
+        "evidence_url": evidence_url,
+        "evidence_quote": "",
+        "status": status,
+    }
+
+
+def _run_objective(
+    criterion: dict[str, typing.Any],
+    evidence_policy: dict[str, typing.Any],
+    budget: dict[str, int] | None = None,
+) -> dict[str, typing.Any]:
+    """Run one manifest-validated objective criterion against independently fetched bytes."""
+    check = criterion["check"]
+    params = criterion["params"]
+    evidence_url = params["url"]
+    if check not in ("http_status", "json_has_keys", "file_hash", "text_contains"):
+        _fail("E_CHECK_UNSUPPORTED", f"unsupported objective check '{check}'")
+
+    method = params.get("method", "GET") if check == "http_status" else "GET"
+    fetched = _fetch(evidence_url, evidence_policy, budget, method)
+    if fetched["status"] == "MISSING":
+        return _objective_result(
+            criterion,
+            False,
+            "MISSING",
+            fetched["reason"],
+            evidence_url,
+        )
+
+    body = fetched["body"]
+    if check == "http_status":
+        expected = params["expected_status"]
+        expected_statuses = expected if isinstance(expected, list) else [expected]
+        passed = fetched["http_status"] in expected_statuses
+        reason = f"HTTP {fetched['http_status']}"
+    elif check == "file_hash":
+        actual_hash = hashlib.sha256(body).hexdigest()
+        passed = actual_hash.lower() == params["sha256"].lower()
+        reason = "SHA-256 matches" if passed else "SHA-256 does not match"
+    elif check == "json_has_keys":
+        try:
+            document = json.loads(body.decode("utf-8"))
+        except (UnicodeDecodeError, ValueError, TypeError, RecursionError):
+            return _objective_result(
+                criterion, False, "FAIL", "response is not valid JSON", evidence_url
+            )
+        passed = True
+        for path in params["required_keys"]:
+            found, _ = _json_path_value(document, path)
+            if not found:
+                passed = False
+                break
+        if passed:
+            for path, expected_type in params.get("types", {}).items():
+                found, value = _json_path_value(document, path)
+                if not found or not _json_type_matches(value, expected_type):
+                    passed = False
+                    break
+        reason = "required JSON paths and types are present" if passed else "required JSON path or type is missing"
+    else:
+        text = " ".join(body.decode("utf-8", errors="replace").split())
+        phrases = [" ".join(phrase.split()) for phrase in params["phrases"]]
+        case_sensitive = params.get("case_sensitive", False)
+        if not case_sensitive:
+            text = text.lower()
+            phrases = [phrase.lower() for phrase in phrases]
+        passed = all(phrase in text for phrase in phrases)
+        reason = "all required phrases are present" if passed else "one or more required phrases are missing"
+
+    return _objective_result(
+        criterion,
+        passed,
+        "PASS" if passed else "FAIL",
+        reason,
+        evidence_url,
+    )
+
+
 class Presense(gl.Contract):
     """Acceptance adjudication primitive with manifest and escrow lifecycle."""
 
@@ -875,6 +1152,28 @@ class Presense(gl.Contract):
         agreement.status = "SUBMITTED"
         self.agreements[agreement_id] = agreement
         return submission_id
+
+    @gl.public.write
+    def preview_objective_checks(self, agreement_id: str) -> typing.Any:
+        """Run and return objective results without storing a verdict or changing state."""
+        agreement = self._require_agreement(agreement_id)
+        if agreement.status not in ("SUBMITTED", "DISPUTED"):
+            _fail("E_INVALID_STATE", "agreement has no submitted delivery to check")
+        manifest = json.loads(agreement.manifest_json)
+        criteria = manifest["criteria"]
+        evidence_policy = manifest["evidence_policy"]
+
+        def run_checks() -> list[dict[str, typing.Any]]:
+            budget = {"bytes_used": 0}
+            results = []
+            for criterion in criteria:
+                if criterion["kind"] == "objective":
+                    results.append(
+                        _run_objective(criterion, evidence_policy, budget)
+                    )
+            return results
+
+        return gl.eq_principle.strict_eq(run_checks)
 
     @gl.public.write
     def claim_expired(self, agreement_id: str) -> None:

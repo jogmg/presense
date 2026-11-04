@@ -147,10 +147,10 @@ Non-objectives:
 
 - `require_https = true`.
 - URL validation rejects credentials, localhost, loopback, and private IPv4 ranges.
-- Redirect cap and final-URL domain check.
+- Redirect responses exposed by the SDK are followed only within the configured cap, and every destination is revalidated for HTTPS and allowed domain.
 - Fetch size cap.
 
-**Residual risk:** DNS rebinding and exotic IP encodings are not fully handled in v1. Validators run in a sandbox; the contract does not fetch arbitrary internal services.
+**Residual risk:** The pinned web API returns only `status`, `headers`, and `body`; it has no redirect toggle and exposes no final URL. Presense can validate visible redirect responses but cannot prove the backend did not transparently follow a redirect to another domain. Use direct final-resource URLs until the runtime provides a way to disable automatic redirects or report the final URL. DNS rebinding and exotic IP encodings are also not fully handled in v1.
 
 ---
 
