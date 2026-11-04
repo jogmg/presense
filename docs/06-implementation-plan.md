@@ -255,30 +255,31 @@ Use `gl.nondet.web.request` inside the non-deterministic block. Do not fetch in 
 
 ## 7. Phase 4 — Subjective checks and consensus
 
+**Status: implementation complete.** Direct tests cover honest evaluation, a schema-valid lie, prompt injection, and score-tolerance boundaries. Dedicated wrong-decision and pass-mismatch tests remain open in the definition of done.
+
 ### Goal
 
 The hard part: an LLM rubric with independent validator verification.
 
 ### Tasks
 
-- [ ] Implement the prompt builder with evidence delimiters and security rules.
-- [ ] Implement `_call_llm(prompt) -> dict`.
-- [ ] Parse and validate LLM JSON defensively.
-- [ ] Implement evidence normalization.
-- [ ] Implement quote verification.
-- [ ] Implement `_run_subjective(criterion, evidence_policy)`.
-- [ ] Implement `_build_verdict_payload`.
-- [ ] Implement `_equivalent(leader, mine)`.
-- [ ] Implement `evaluate` with `run_nondet_unsafe`.
-- [ ] Implement deterministic post-processing:
+- [x] Implement the prompt builder with evidence delimiters and security rules.
+- [x] Call `gl.nondet.exec_prompt` and parse LLM JSON defensively.
+- [x] Implement evidence normalization.
+- [x] Implement quote verification.
+- [x] Implement `_run_subjective(criterion, evidence_policy)`.
+- [x] Implement `_build_verdict_payload`.
+- [x] Implement `_equivalent(leader, mine)`.
+- [x] Implement `evaluate` with `run_nondet_unsafe`.
+- [x] Implement deterministic post-processing:
   - validate leader shape,
   - validate decision consistency,
   - compute payout,
   - set timestamps.
-- [ ] Write validator tests with `direct_vm.run_validator`.
-- [ ] Write the schema-valid lie test.
-- [ ] Write the prompt-injection test.
-- [ ] Write score-tolerance tests.
+- [x] Write validator tests with `direct_vm.run_validator`.
+- [x] Write the schema-valid lie test.
+- [x] Write the prompt-injection test.
+- [x] Write score-tolerance tests.
 
 ### Deliverable
 
@@ -286,16 +287,16 @@ A working `evaluate` that stores a verdict only when the leader and validator ag
 
 ### Definition of done
 
-- [ ] Honest leader passes.
-- [ ] Schema-valid lie fails.
+- [x] Honest leader passes.
+- [x] Schema-valid lie fails.
 - [ ] Wrong decision fails.
 - [ ] Wrong objective pass fails.
 - [ ] Subjective pass mismatch fails.
-- [ ] Invalid quote fails.
-- [ ] Score outside tolerance fails.
-- [ ] Score within tolerance passes.
-- [ ] Prompt-injection test does not produce a false ACCEPT.
-- [ ] `strict_eq` is not used for raw LLM output.
+- [x] Invalid quote fails.
+- [x] Score outside tolerance fails.
+- [x] Score within tolerance passes.
+- [x] Prompt-injection test does not produce a false ACCEPT.
+- [x] `strict_eq` is not used for raw LLM output.
 
 ### Design note
 

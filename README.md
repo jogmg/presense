@@ -225,7 +225,7 @@ genvm-lint check contracts/Presense.py
 # 3. Fast tests (runs today)
 pytest tests/direct/ -v
 
-# 4. Local integration (once Phase 4 lands)
+# 4. Local integration (requires a running GenLayer node)
 gltest tests/integration/ -v -s --network localnet
 
 # 5. Deploy to Bradbury (once the interface stabilizes)
@@ -233,9 +233,9 @@ genlayer network set testnet-bradbury
 genlayer deploy --contract contracts/Presense.py
 ```
 
-> Steps 2 and 3 are runnable now. Steps 4 and 5 become runnable as the
-> lifecycle and consensus phases in the
-> [implementation plan](docs/06-implementation-plan.md) are completed.
+> Steps 2 and 3 are runnable without a network. Step 4 requires a running local
+> GenLayer node; see the [integration test notes](tests/integration/README.md).
+> Step 5 requires a configured deployment network and a stabilized interface.
 >
 > On Windows, prefix `genvm-lint` with `$env:PYTHONIOENCODING="utf-8"` if the
 > CLI fails while printing Unicode output.

@@ -4,7 +4,7 @@
 **Version:** 0.1
 **Contract:** `contracts/Presense.py`
 **Runtime:** `py-genlayer` (magic comment below)
-**Status:** Phases 1–3 implemented (manifest core, lifecycle/escrow, objective checks); verdict evaluation and consensus pending.
+**Status:** Phases 1–4 implemented (manifest core, lifecycle/escrow, objective checks, subjective evaluation, and leader/validator consensus).
 
 ---
 
