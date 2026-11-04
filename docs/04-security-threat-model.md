@@ -31,31 +31,31 @@ Non-objectives:
 
 ## 2. Assets
 
-| Asset | Description | Impact if compromised |
-|---|---|---|
-| **Escrow** | GEN held for an agreement. | Direct financial loss. |
-| **Manifest** | Frozen acceptance criteria. | Buyer/seller can be judged against a different standard. |
-| **Submission** | Seller’s evidence references. | False delivery or false rejection. |
-| **Verdict** | Decision and payout. | Wrong party paid. |
-| **Claims ledger** | Withdrawable balances. | Double-spend or locked funds. |
-| **Reputation** | Off-chain trust from verdict history. | Market distortion. |
-| **Availability** | Ability to evaluate and settle. | Funds locked indefinitely. |
+| Asset             | Description                           | Impact if compromised                                    |
+| ----------------- | ------------------------------------- | -------------------------------------------------------- |
+| **Escrow**        | GEN held for an agreement.            | Direct financial loss.                                   |
+| **Manifest**      | Frozen acceptance criteria.           | Buyer/seller can be judged against a different standard. |
+| **Submission**    | Seller’s evidence references.         | False delivery or false rejection.                       |
+| **Verdict**       | Decision and payout.                  | Wrong party paid.                                        |
+| **Claims ledger** | Withdrawable balances.                | Double-spend or locked funds.                            |
+| **Reputation**    | Off-chain trust from verdict history. | Market distortion.                                       |
+| **Availability**  | Ability to evaluate and settle.       | Funds locked indefinitely.                               |
 
 ---
 
 ## 3. Actors
 
-| Actor | Trust | Incentive |
-|---|---|---|
-| **Buyer** | Untrusted | Pay less, reject weak work. |
-| **Seller** | Untrusted | Get paid, submit minimal work. |
-| **Leader** | Untrusted individually | Pass validation, avoid slashing. |
-| **Validators** | Untrusted individually, trusted as a diverse set | Agree with leader or correctly reject. |
-| **Evidence host** | Untrusted | Serve favorable content, deny service, change content. |
-| **LLM provider** | Untrusted | Return plausible but wrong output. |
-| **Frontend** | Untrusted | Phishing, misdisplay, fake verdicts. |
-| **Protocol** | Trusted | Ordering, consensus, appeals. |
-| **Third-party caller** | Untrusted | Trigger evaluation/settlement, spam. |
+| Actor                  | Trust                                            | Incentive                                              |
+| ---------------------- | ------------------------------------------------ | ------------------------------------------------------ |
+| **Buyer**              | Untrusted                                        | Pay less, reject weak work.                            |
+| **Seller**             | Untrusted                                        | Get paid, submit minimal work.                         |
+| **Leader**             | Untrusted individually                           | Pass validation, avoid slashing.                       |
+| **Validators**         | Untrusted individually, trusted as a diverse set | Agree with leader or correctly reject.                 |
+| **Evidence host**      | Untrusted                                        | Serve favorable content, deny service, change content. |
+| **LLM provider**       | Untrusted                                        | Return plausible but wrong output.                     |
+| **Frontend**           | Untrusted                                        | Phishing, misdisplay, fake verdicts.                   |
+| **Protocol**           | Trusted                                          | Ordering, consensus, appeals.                          |
+| **Third-party caller** | Untrusted                                        | Trigger evaluation/settlement, spam.                   |
 
 ---
 
@@ -426,7 +426,7 @@ These must hold after every state transition:
 - [ ] Compute payout with floor and remainder.
 - [ ] Update claims before emit.
 - [ ] Reject zero claims.
-- [ ] Reject direct value transfers with `__receive__`.
+- [ ] Keep a receive handler absent so GenVM rejects value-only transfers; fund only through `create_agreement`.
 
 ### Consensus
 

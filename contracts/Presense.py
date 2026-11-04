@@ -2,6 +2,8 @@
 
 from genlayer import *
 
+from dataclasses import dataclass
+from datetime import datetime, timezone
 import hashlib
 import json
 import re
@@ -71,8 +73,57 @@ _CHECK_KIND = {
 _JSON_TYPES = ("string", "number", "boolean", "object", "array", "null")
 
 
+@gl.evm.contract_interface
+class _Recipient:
+    class View:
+        pass
+
+    class Write:
+        pass
+
+
+@allow_storage
+@dataclass
+class Agreement:
+    id: str
+    buyer: Address
+    seller: Address
+    manifest_json: str
+    manifest_hash: str
+    manifest_url: str
+    metadata_url: str
+    escrow: u256
+    deadline: u256
+    challenge_window: u256
+    created_at: u256
+    status: str
+    submission_id: str
+    verdict_id: str
+    challenge_id: str
+    challenge_count: u8
+    evaluated_at: u256
+
+
+@allow_storage
+@dataclass
+class Submission:
+    id: str
+    agreement_id: str
+    artifact_urls: DynArray[str]
+    artifact_hashes: DynArray[str]
+    notes: str
+    submitted_at: u256
+    submitter: Address
+
+
 def _fail(code: str, message: str) -> typing.NoReturn:
     raise gl.vm.UserError(f"{code}: {message}")
+
+
+def _as_address(value: typing.Any) -> Address:
+    if isinstance(value, Address):
+        return value
+    return Address(value)
 
 
 def _reject_constant(value: str) -> typing.NoReturn:
@@ -652,16 +703,17 @@ def validate_manifest(parsed: dict[str, typing.Any]) -> None:
 
 
 class Presense(gl.Contract):
-    """Acceptance adjudication primitive.
-
-    Phase 1: strict manifest parsing, canonicalization, hashing, and schema
-    validation. Lifecycle and consensus logic arrive in later phases.
-    """
+    """Acceptance adjudication primitive with manifest and escrow lifecycle."""
 
     version: str
+    agreements: TreeMap[str, Agreement]
+    submissions: TreeMap[str, Submission]
+    claims: TreeMap[Address, u256]
+    total_locked: u256
 
     def __init__(self) -> None:
         self.version = "0.1.0"
+        self.total_locked = u256(0)
 
     @gl.public.view
     def get_version(self) -> str:
@@ -677,6 +729,213 @@ class Presense(gl.Contract):
             "hash": parsed["hash"],
             "criteria": len(parsed["data"]["criteria"]),
         }
+
+    @gl.public.write.payable
+    def create_agreement(
+        self,
+        agreement_id: str,
+        seller: Address,
+        manifest_json: str,
+        manifest_url: str,
+        deadline: u256,
+        challenge_window: u256,
+        metadata_url: str,
+    ) -> str:
+        """Create and fund a new agreement with a validated manifest."""
+        if (
+            not isinstance(agreement_id, str)
+            or re.match(r"^[A-Za-z0-9_-]{1,64}$", agreement_id) is None
+        ):
+            _fail("E_BAD_ID", "agreement ID must be 1-64 letters, digits, '_' or '-'")
+        if agreement_id in self.agreements:
+            _fail("E_AGREEMENT_EXISTS", "agreement ID already exists")
+
+        buyer = _as_address(gl.message.sender_address)
+        seller = _as_address(seller)
+        zero_address = Address("0x" + "0" * 40)
+        if seller == buyer:
+            _fail("E_SELF_AGREEMENT", "buyer and seller must be different")
+        if seller == zero_address or seller == gl.message.contract_address:
+            _fail("E_ZERO_ADDRESS", "seller must be a non-zero external address")
+        if gl.message.value == u256(0):
+            _fail("E_ESCROW_ZERO", "escrow must be greater than zero")
+
+        now = self._now()
+        if int(deadline) < int(now) + MIN_DEADLINE_SECONDS:
+            _fail("E_DEADLINE_INVALID", "deadline must be at least one hour in the future")
+        if (
+            int(challenge_window) < MIN_CHALLENGE_WINDOW
+            or int(challenge_window) > MAX_CHALLENGE_WINDOW
+        ):
+            _fail("E_WINDOW_INVALID", "challenge window must be between 1 hour and 7 days")
+
+        parsed = parse_manifest(manifest_json)
+        validate_manifest(parsed)
+        _, allowed_domains = _validate_evidence_policy(
+            parsed["data"]["evidence_policy"]
+        )
+        self._validate_optional_url(manifest_url, "manifest_url")
+        self._validate_optional_url(metadata_url, "metadata_url")
+        self._validate_manifest_urls(parsed["data"], allowed_domains)
+
+        agreement = Agreement(
+            id=agreement_id,
+            buyer=buyer,
+            seller=seller,
+            manifest_json=parsed["canonical"],
+            manifest_hash=parsed["hash"],
+            manifest_url=manifest_url,
+            metadata_url=metadata_url,
+            escrow=gl.message.value,
+            deadline=u256(deadline),
+            challenge_window=u256(challenge_window),
+            created_at=now,
+            status="CREATED",
+            submission_id="",
+            verdict_id="",
+            challenge_id="",
+            challenge_count=u8(0),
+            evaluated_at=u256(0),
+        )
+        self.agreements[agreement_id] = agreement
+        self.total_locked = self.total_locked + gl.message.value
+        return agreement_id
+
+    @gl.public.write
+    def accept_agreement(self, agreement_id: str) -> None:
+        """Accept an agreement as its named seller."""
+        agreement = self._require_agreement(agreement_id)
+        if _as_address(gl.message.sender_address) != agreement.seller:
+            _fail("E_UNAUTHORIZED", "only the seller can accept")
+        if agreement.status != "CREATED":
+            _fail("E_INVALID_STATE", "agreement is not awaiting acceptance")
+        if self._now() > agreement.deadline:
+            _fail("E_DEADLINE_PASSED", "acceptance deadline has passed")
+
+        agreement.status = "ACTIVE"
+        self.agreements[agreement_id] = agreement
+
+    @gl.public.write
+    def cancel_agreement(self, agreement_id: str) -> None:
+        """Cancel an unaccepted agreement and credit the buyer's refund."""
+        agreement = self._require_agreement(agreement_id)
+        if _as_address(gl.message.sender_address) != agreement.buyer:
+            _fail("E_UNAUTHORIZED", "only the buyer can cancel")
+        if agreement.status != "CREATED":
+            _fail("E_INVALID_STATE", "only an unaccepted agreement can be cancelled")
+
+        agreement.status = "CANCELLED"
+        self.agreements[agreement_id] = agreement
+        self._credit_claim(agreement.buyer, agreement.escrow)
+
+    @gl.public.write
+    def submit_delivery(
+        self,
+        agreement_id: str,
+        artifact_urls: DynArray[str],
+        artifact_hashes: DynArray[str],
+        notes: str,
+    ) -> str:
+        """Record the seller's artifact references before the deadline."""
+        agreement = self._require_agreement(agreement_id)
+        if _as_address(gl.message.sender_address) != agreement.seller:
+            _fail("E_UNAUTHORIZED", "only the seller can submit delivery")
+        if agreement.status != "ACTIVE":
+            _fail("E_INVALID_STATE", "agreement is not active")
+        if self._now() > agreement.deadline:
+            _fail("E_DEADLINE_PASSED", "delivery deadline has passed")
+        if len(artifact_urls) < 1 or len(artifact_urls) > MAX_ARTIFACTS:
+            _fail("E_ARTIFACT_COUNT", "delivery must contain 1-10 artifact URLs")
+        if len(artifact_urls) != len(artifact_hashes):
+            _fail("E_ARTIFACT_MISMATCH", "artifact URL and hash counts differ")
+        if not isinstance(notes, str) or len(notes) > MAX_NOTES_CHARS:
+            _fail("E_MANIFEST_INVALID", "notes must be at most 2,000 characters")
+
+        manifest = json.loads(agreement.manifest_json)
+        _, allowed_domains = _validate_evidence_policy(manifest["evidence_policy"])
+        for index in range(len(artifact_urls)):
+            url = artifact_urls[index]
+            digest = artifact_hashes[index]
+            _validate_url(url, allowed_domains, f"artifact_urls[{index}]")
+            if digest != "" and re.match(r"^[0-9a-fA-F]{64}$", digest) is None:
+                _fail("E_BAD_HASH", f"artifact_hashes[{index}] must be empty or 64 hex characters")
+
+        submission_id = f"{agreement_id}:submission"
+        submission = Submission(
+            id=submission_id,
+            agreement_id=agreement_id,
+            artifact_urls=artifact_urls,
+            artifact_hashes=artifact_hashes,
+            notes=notes,
+            submitted_at=self._now(),
+            submitter=_as_address(gl.message.sender_address),
+        )
+        self.submissions[submission_id] = submission
+        agreement.submission_id = submission_id
+        agreement.status = "SUBMITTED"
+        self.agreements[agreement_id] = agreement
+        return submission_id
+
+    @gl.public.write
+    def claim_expired(self, agreement_id: str) -> None:
+        """Refund the buyer after an active agreement misses its deadline."""
+        agreement = self._require_agreement(agreement_id)
+        if agreement.status != "ACTIVE":
+            _fail("E_INVALID_STATE", "only an active agreement can expire")
+        if agreement.submission_id:
+            _fail("E_ALREADY_SUBMITTED", "delivery has already been submitted")
+        if self._now() <= agreement.deadline:
+            _fail("E_DEADLINE_NOT_PASSED", "delivery deadline has not passed")
+
+        agreement.status = "EXPIRED"
+        self.agreements[agreement_id] = agreement
+        self._credit_claim(agreement.buyer, agreement.escrow)
+
+    @gl.public.write
+    def withdraw(self, kind: str) -> None:
+        """Withdraw the caller's full claim to an EVM address or IC."""
+        if kind not in ("evm", "ic"):
+            _fail("E_BAD_RECIPIENT_KIND", "kind must be 'evm' or 'ic'")
+        sender = _as_address(gl.message.sender_address)
+        amount = self.claims.get(sender, u256(0))
+        if amount == u256(0):
+            _fail("E_CLAIM_ZERO", "caller has no claim to withdraw")
+
+        self.claims[sender] = u256(0)
+        self.total_locked = self.total_locked - amount
+        if kind == "ic":
+            gl.get_contract_at(sender).emit_transfer(value=amount, on="finalized")
+        else:
+            _Recipient(sender).emit_transfer(value=amount)
+
+    @gl.public.view
+    def get_agreement(self, agreement_id: str) -> typing.Any:
+        """Return the public agreement fields as a structured object."""
+        return self._agreement_dict(self._require_agreement(agreement_id))
+
+    @gl.public.view
+    def get_agreement_json(self, agreement_id: str) -> str:
+        """Return the agreement fields as compact JSON."""
+        return json.dumps(
+            self._agreement_dict(self._require_agreement(agreement_id)),
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+
+    @gl.public.view
+    def get_status(self, agreement_id: str) -> str:
+        """Return the current lifecycle status for an agreement."""
+        return self._require_agreement(agreement_id).status
+
+    @gl.public.view
+    def get_claim(self, address: Address) -> u256:
+        """Return an address's unwithdrawn claim."""
+        return self.claims.get(_as_address(address), u256(0))
+
+    @gl.public.view
+    def get_totals(self) -> typing.Any:
+        """Return tracked escrow/claims and the contract's native balance."""
+        return {"total_locked": self.total_locked, "balance": self.balance}
 
     @gl.public.view
     def get_constants(self) -> typing.Any:
@@ -696,4 +955,51 @@ class Presense(gl.Contract):
             "MAX_TOTAL_BYTES": MAX_TOTAL_BYTES,
             "MAX_LLM_CHARS": MAX_LLM_CHARS,
             "MAX_URL_CHARS": MAX_URL_CHARS,
+        }
+
+    def _now(self) -> u256:
+        return u256(int(datetime.now(timezone.utc).timestamp()))
+
+    def _require_agreement(self, agreement_id: str) -> Agreement:
+        if agreement_id not in self.agreements:
+            _fail("E_NOT_FOUND", "agreement does not exist")
+        return self.agreements[agreement_id]
+
+    def _credit_claim(self, address: Address, amount: u256) -> None:
+        self.claims[address] = self.claims.get(address, u256(0)) + amount
+
+    def _validate_optional_url(self, url: str, name: str) -> None:
+        if not isinstance(url, str):
+            _fail("E_URL_INVALID", f"{name} must be a string")
+        if url:
+            host = _url_host(url, name)
+            _reject_private_host(host, name)
+
+    def _validate_manifest_urls(
+        self, manifest: dict[str, typing.Any], allowed_domains: list[str]
+    ) -> None:
+        for index, criterion in enumerate(manifest["criteria"]):
+            params = criterion["params"]
+            key = "evidence_url" if criterion["check"] == "llm_rubric" else "url"
+            _validate_url(params[key], allowed_domains, f"criteria[{index}].params.{key}")
+
+    def _agreement_dict(self, agreement: Agreement) -> dict[str, typing.Any]:
+        return {
+            "id": agreement.id,
+            "buyer": str(agreement.buyer),
+            "seller": str(agreement.seller),
+            "manifest_json": agreement.manifest_json,
+            "manifest_hash": agreement.manifest_hash,
+            "manifest_url": agreement.manifest_url,
+            "metadata_url": agreement.metadata_url,
+            "escrow": int(agreement.escrow),
+            "deadline": int(agreement.deadline),
+            "challenge_window": int(agreement.challenge_window),
+            "created_at": int(agreement.created_at),
+            "status": agreement.status,
+            "submission_id": agreement.submission_id,
+            "verdict_id": agreement.verdict_id,
+            "challenge_id": agreement.challenge_id,
+            "challenge_count": int(agreement.challenge_count),
+            "evaluated_at": int(agreement.evaluated_at),
         }

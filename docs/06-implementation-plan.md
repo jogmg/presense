@@ -18,16 +18,16 @@
 
 ## 2. Phase overview
 
-| Phase | Name | Output | Estimate |
-|---|---|---|---|
-| 0 | Setup | Repo, tooling, skeleton | 0.5 day |
-| 1 | Manifest core | Parser, validator, canonicalization, tests | 1.5 days |
-| 2 | Lifecycle and escrow | Create, accept, cancel, submit, expire, claims | 2 days |
-| 3 | Objective checks | Fetch, 4 checks, evidence policy | 1.5 days |
-| 4 | Subjective + consensus | LLM rubric, validator, adversarial tests | 2.5 days |
-| 5 | Verdict and settlement | Verdict, payout, challenge, settle, withdraw | 1.5 days |
-| 6 | Hardening | Security tests, lint, review, docs sync | 1 day |
-| 7 | Deploy and submit | Bradbury, evidence, portal | 1 day |
+| Phase | Name                   | Output                                         | Estimate |
+| ----- | ---------------------- | ---------------------------------------------- | -------- |
+| 0     | Setup                  | Repo, tooling, skeleton                        | 0.5 day  |
+| 1     | Manifest core          | Parser, validator, canonicalization, tests     | 1.5 days |
+| 2     | Lifecycle and escrow   | Create, accept, cancel, submit, expire, claims | 2 days   |
+| 3     | Objective checks       | Fetch, 4 checks, evidence policy               | 1.5 days |
+| 4     | Subjective + consensus | LLM rubric, validator, adversarial tests       | 2.5 days |
+| 5     | Verdict and settlement | Verdict, payout, challenge, settle, withdraw   | 1.5 days |
+| 6     | Hardening              | Security tests, lint, review, docs sync        | 1 day    |
+| 7     | Deploy and submit      | Bradbury, evidence, portal                     | 1 day    |
 
 **Total:** ~11.5 working days. A solo builder can compress this to 10 days by running docs and tests in parallel.
 
@@ -151,30 +151,26 @@ Keep the parser as a pure helper. The contract method calls it, but the parser d
 
 ## 5. Phase 2 — Lifecycle and escrow
 
+**Status: complete.**
+
 ### Goal
 
 A complete money lifecycle with no evaluation yet.
 
 ### Tasks
 
-- [ ] Define `Agreement`, `Submission`, `Claim` storage types.
-- [ ] Implement `create_agreement` payable.
-- [ ] Implement `accept_agreement`.
-- [ ] Implement `cancel_agreement`.
-- [ ] Implement `submit_delivery`.
-- [ ] Implement `claim_expired`.
-- [ ] Implement `withdraw(kind)` with `evm`/`ic` routing.
-- [ ] Implement view methods:
-  - `get_agreement`,
-  - `get_agreement_json`,
-  - `get_status`,
-  - `get_claim`,
-  - `get_totals`,
-  - `get_constants`.
-- [ ] Implement `_now()` using `gl.message` timestamp.
-- [ ] Implement `_require_*` helpers.
-- [ ] Write lifecycle tests.
-- [ ] Write accounting conservation tests.
+- [x] Define `Agreement` and `Submission` storage types and the `TreeMap[Address, u256]` claim ledger.
+- [x] Implement `create_agreement` payable.
+- [x] Implement `accept_agreement`.
+- [x] Implement `cancel_agreement`.
+- [x] Implement `submit_delivery`.
+- [x] Implement `claim_expired`.
+- [x] Implement `withdraw(kind)` with `evm`/`ic` routing.
+- [x] Implement view methods: `get_agreement`, `get_agreement_json`, `get_status`, `get_claim`, `get_totals`, and `get_constants`.
+- [x] Implement `_now()` using the transaction-pinned GenVM clock.
+- [x] Implement agreement and claim helpers.
+- [x] Write lifecycle tests.
+- [x] Write accounting conservation tests.
 
 ### Deliverable
 
@@ -182,12 +178,26 @@ A contract that can hold escrow, accept work, submit delivery, cancel, expire, a
 
 ### Definition of done
 
-- [ ] All lifecycle tests pass.
-- [ ] Buyer/seller roles are enforced.
-- [ ] Escrow is tracked from `gl.message.value`, not `self.balance`.
-- [ ] `total_locked` is correct after create, cancel, expire, withdraw.
-- [ ] `withdraw` cannot double-spend.
-- [ ] No evaluation code exists yet.
+- [x] All lifecycle tests pass.
+- [x] Buyer/seller roles are enforced.
+- [x] Escrow is tracked from `gl.message.value`, not `self.balance`.
+- [x] `total_locked` is correct after create, cancel, expire, withdraw.
+- [x] `withdraw` cannot double-spend.
+- [x] No evaluation code exists yet.
+
+### Verified locally
+
+```text
+✓ Lint passed (3 checks)
+✓ Validation passed
+  Contract: Presense
+  Methods: 14 (8 view, 6 write)
+
+108 passed
+contracts/Presense.py  96% coverage (branches included)
+```
+
+The contract intentionally has no `__receive__` handler: GenVM rejects value-only transfers by default, while the pinned linter rejects a custom public double-underscore method.
 
 ### Common mistakes to avoid
 
@@ -416,18 +426,18 @@ A deployed contract, a public repo, and a submitted contribution.
 
 ## 11. Ten-day schedule
 
-| Day | Focus | Output |
-|---|---|---|
-| 1 | Phase 0 + Phase 1 start | Repo, skeleton, parser tests. |
-| 2 | Phase 1 finish | Manifest validation complete. |
-| 3 | Phase 2 start | Create/accept/cancel. |
-| 4 | Phase 2 finish | Submit/expire/withdraw. |
-| 5 | Phase 3 | Objective checks + mocks. |
-| 6 | Phase 4 start | LLM rubric + prompt. |
-| 7 | Phase 4 finish | Validator + adversarial tests. |
-| 8 | Phase 5 | Verdict, challenge, settlement. |
-| 9 | Phase 6 | Hardening, review, docs. |
-| 10 | Phase 7 | Bradbury deploy, smoke tests, portal draft. |
+| Day | Focus                   | Output                                      |
+| --- | ----------------------- | ------------------------------------------- |
+| 1   | Phase 0 + Phase 1 start | Repo, skeleton, parser tests.               |
+| 2   | Phase 1 finish          | Manifest validation complete.               |
+| 3   | Phase 2 start           | Create/accept/cancel.                       |
+| 4   | Phase 2 finish          | Submit/expire/withdraw.                     |
+| 5   | Phase 3                 | Objective checks + mocks.                   |
+| 6   | Phase 4 start           | LLM rubric + prompt.                        |
+| 7   | Phase 4 finish          | Validator + adversarial tests.              |
+| 8   | Phase 5                 | Verdict, challenge, settlement.             |
+| 9   | Phase 6                 | Hardening, review, docs.                    |
+| 10  | Phase 7                 | Bradbury deploy, smoke tests, portal draft. |
 
 **Buffer:** Days 11–12 for review feedback and portal submission. Do not compress the consensus tests.
 
@@ -541,17 +551,17 @@ Keep helpers small and pure where possible. The contract file should remain read
 
 ## 15. Risk register
 
-| Risk | Probability | Impact | Mitigation |
-|---|---|---|---|
-| Manifest parser bugs | Medium | High | Pure helpers, duplicate-key tests, fuzz cases. |
-| LLM output variance | High | Medium | Tolerance bands, quote checks, `UNDETERMINED`. |
-| Evidence instability | Medium | High | Hashes, multiple sources, size caps. |
-| Validator logic bug | Medium | High | Adversarial tests, peer review, `run_validator` tests. |
-| Payout rounding bug | Low | High | Conservation tests, floor + remainder. |
-| Scope creep | High | High | Freeze v1; move bonds/milestones/privacy to v2. |
-| Bradbury flakiness | Medium | Medium | Retry, small escrow, save evidence, localnet first. |
-| Portal rejection | Medium | Medium | Follow category 52 evidence rules; emphasize consensus, not demo. |
-| Time underestimation | Medium | Medium | 2-day buffer; cut features, not tests. |
+| Risk                 | Probability | Impact | Mitigation                                                        |
+| -------------------- | ----------- | ------ | ----------------------------------------------------------------- |
+| Manifest parser bugs | Medium      | High   | Pure helpers, duplicate-key tests, fuzz cases.                    |
+| LLM output variance  | High        | Medium | Tolerance bands, quote checks, `UNDETERMINED`.                    |
+| Evidence instability | Medium      | High   | Hashes, multiple sources, size caps.                              |
+| Validator logic bug  | Medium      | High   | Adversarial tests, peer review, `run_validator` tests.            |
+| Payout rounding bug  | Low         | High   | Conservation tests, floor + remainder.                            |
+| Scope creep          | High        | High   | Freeze v1; move bonds/milestones/privacy to v2.                   |
+| Bradbury flakiness   | Medium      | Medium | Retry, small escrow, save evidence, localnet first.               |
+| Portal rejection     | Medium      | Medium | Follow category 52 evidence rules; emphasize consensus, not demo. |
+| Time underestimation | Medium      | Medium | 2-day buffer; cut features, not tests.                            |
 
 ---
 

@@ -4,7 +4,7 @@
 
 Presense is a reusable GenLayer Intelligent Contract primitive that adjudicates whether agent-delivered work satisfies an agreed **Acceptance Manifest** (the Acceptance Test Manifest), then settles escrow according to a structured verdict.
 
-> **Status:** Phase 1 complete. The repository contains the full specification, a strict manifest parser with canonicalization and SHA-256, and 95 passing direct-mode tests. Lifecycle and escrow begin in Phase 2.
+> **Status:** Phase 2 complete. The repository contains the strict manifest parser, canonicalization and SHA-256, plus the agreement and escrow-claim lifecycle. Evaluation and verdict consensus are later phases.
 
 ---
 
@@ -27,8 +27,8 @@ Expected:
 ✓ Lint passed (3 checks)
 ✓ Validation passed
   Contract: Presense
-  Methods: 3 (3 view, 0 write)
-95 passed
+  Methods: 14 (8 view, 6 write)
+108 passed
 ```
 
 For coverage:
@@ -107,12 +107,12 @@ sequenceDiagram
 
 ## The four artifacts
 
-| Artifact | Purpose |
-|---|---|
-| **Agreement** | Binds buyer, seller, escrow, manifest, deadline, and challenge window. |
-| **Acceptance Manifest** | Immutable JSON document containing objective checks and subjective rubrics. |
-| **Submission** | Seller’s delivered artifacts: URLs, hashes, notes, timestamp. |
-| **Verdict** | Structured decision: `ACCEPT`, `PARTIAL`, `REJECT`, or `UNDETERMINED`, with per-criterion results. |
+| Artifact                | Purpose                                                                                            |
+| ----------------------- | -------------------------------------------------------------------------------------------------- |
+| **Agreement**           | Binds buyer, seller, escrow, manifest, deadline, and challenge window.                             |
+| **Acceptance Manifest** | Immutable JSON document containing objective checks and subjective rubrics.                        |
+| **Submission**          | Seller’s delivered artifacts: URLs, hashes, notes, timestamp.                                      |
+| **Verdict**             | Structured decision: `ACCEPT`, `PARTIAL`, `REJECT`, or `UNDETERMINED`, with per-criterion results. |
 
 ---
 
@@ -139,7 +139,7 @@ presense/
 │   ├── 09-roadmap-and-grants.md
 │   └── 10-glossary-and-references.md
 ├── contracts/
-│   └── Presense.py    # manifest core; lifecycle pending
+│   └── Presense.py    # manifest core and Phase 2 lifecycle
 ├── tests/
 │   ├── conftest.py    # toolchain compatibility shims
 │   ├── direct/
@@ -154,19 +154,19 @@ presense/
 
 ## Documentation index
 
-| Document | Read it for |
-|---|---|
-| [00 — Product Brief](docs/00-product-brief.md) | Problem, users, scope, success metrics, positioning. |
-| [01 — Architecture](docs/01-architecture.md) | System context, flows, state machine, trust boundaries. |
-| [02 — Contract Spec](docs/02-contract-spec.md) | Exact API, data model, manifest schema, payouts, errors. |
-| [03 — Consensus Design](docs/03-consensus-design.md) | Leader/validator logic, equivalence rules, prompt design. |
+| Document                                                         | Read it for                                                      |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------- |
+| [00 — Product Brief](docs/00-product-brief.md)                   | Problem, users, scope, success metrics, positioning.             |
+| [01 — Architecture](docs/01-architecture.md)                     | System context, flows, state machine, trust boundaries.          |
+| [02 — Contract Spec](docs/02-contract-spec.md)                   | Exact API, data model, manifest schema, payouts, errors.         |
+| [03 — Consensus Design](docs/03-consensus-design.md)             | Leader/validator logic, equivalence rules, prompt design.        |
 | [04 — Security & Threat Model](docs/04-security-threat-model.md) | Prompt injection, evidence poisoning, collusion, residual risks. |
-| [05 — Testing Strategy](docs/05-testing-strategy.md) | Direct mode, mocks, adversarial tests, integration tests. |
-| [06 — Implementation Plan](docs/06-implementation-plan.md) | Phases, tasks, deliverables, definition of done. |
-| [07 — Deployment Runbook](docs/07-deployment-runbook.md) | Local setup, Studio, Bradbury, deploy, verify, troubleshoot. |
-| [08 — Portal Submission](docs/08-portal-submission.md) | Evidence checklist and reviewer-facing narrative. |
-| [09 — Roadmap & Grants](docs/09-roadmap-and-grants.md) | v1.1, project path, integrations, grant milestones. |
-| [10 — Glossary & References](docs/10-glossary-and-references.md) | Terms and canonical links. |
+| [05 — Testing Strategy](docs/05-testing-strategy.md)             | Direct mode, mocks, adversarial tests, integration tests.        |
+| [06 — Implementation Plan](docs/06-implementation-plan.md)       | Phases, tasks, deliverables, definition of done.                 |
+| [07 — Deployment Runbook](docs/07-deployment-runbook.md)         | Local setup, Studio, Bradbury, deploy, verify, troubleshoot.     |
+| [08 — Portal Submission](docs/08-portal-submission.md)           | Evidence checklist and reviewer-facing narrative.                |
+| [09 — Roadmap & Grants](docs/09-roadmap-and-grants.md)           | v1.1, project path, integrations, grant milestones.              |
+| [10 — Glossary & References](docs/10-glossary-and-references.md) | Terms and canonical links.                                       |
 
 **Recommended reading order:** [00](docs/00-product-brief.md) → [01](docs/01-architecture.md) → [02](docs/02-contract-spec.md) → [03](docs/03-consensus-design.md) → [05](docs/05-testing-strategy.md) → [06](docs/06-implementation-plan.md) → [07](docs/07-deployment-runbook.md) → [08](docs/08-portal-submission.md). Read [04](docs/04-security-threat-model.md) before hardening and [09](docs/09-roadmap-and-grants.md) when planning the next version.
 

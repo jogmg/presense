@@ -4,7 +4,7 @@
 **Version:** 0.1
 **Contract:** `contracts/Presense.py`
 **Runtime:** `py-genlayer` (magic comment below)
-**Status:** Phase 1 implemented (manifest core); lifecycle pending.
+**Status:** Phases 1 and 2 implemented (manifest core and lifecycle/escrow); evaluation pending.
 
 ---
 
@@ -468,38 +468,30 @@ class _Recipient:
 
 ---
 
-### 4.10 `__receive__` guard
+### 4.10 Direct value transfers
 
-```python
-@gl.public.write.payable
-def __receive__(self) -> None:
-    raise gl.vm.UserError("E_DIRECT_TRANSFER: use create_agreement")
-```
-
-**Purpose:** reject value sent without a method call. This keeps `self.balance` aligned with `total_locked` and prevents accidental GEN from being trapped.
-
-**Errors:** `E_DIRECT_TRANSFER`.
+Presense does not define a `__receive__` handler. GenVM's default dispatcher rejects value-only calls when no receive handler is present, so funding must go through the payable `create_agreement` method. The pinned `genvm-linter 0.11.0` rejects public methods with double-underscore names, so this runtime rejection does not carry a custom `E_DIRECT_TRANSFER` error code.
 
 ---
 
 ## 5. View API
 
-| Method | ID argument | Returns | Purpose |
-|---|---|---|---|
-| `check_manifest(manifest_json: str)` | — (raw JSON) | `typing.Any` | Dry-run validation; returns canonical string, SHA-256, and criterion count. |
-| `get_agreement(id: str)` | Agreement ID | `typing.Any` | Structured agreement. |
-| `get_agreement_json(id: str)` | Agreement ID | `str` | Canonical JSON for debugging. |
-| `get_manifest(id: str)` | Agreement ID | `str` | Canonical manifest JSON. |
-| `get_manifest_hash(id: str)` | Agreement ID | `str` | SHA-256 of canonical manifest. |
-| `get_submission(id: str)` | Submission ID | `typing.Any` | Structured submission. |
-| `get_verdict(id: str)` | Verdict ID | `typing.Any` | Structured verdict. |
-| `get_verdict_json(id: str)` | Verdict ID | `str` | Canonical JSON verdict. |
-| `get_challenge(id: str)` | Challenge ID | `typing.Any` | Structured challenge. |
-| `get_status(id: str)` | Agreement ID | `str` | Current agreement status. |
-| `get_claim(addr: Address)` | Address | `u256` | Unwithdrawn claim. |
-| `get_totals()` | — | `typing.Any` | `total_locked` and `self.balance`. Use `get_claim(addr)` for individual claims. |
-| `get_constants()` | — | `typing.Any` | Limits and version. |
-| `preview_payout(id: str)` | Agreement ID | `typing.Any` | Buyer/seller payout from the latest verdict. |
+| Method                               | ID argument   | Returns      | Purpose                                                                         |
+| ------------------------------------ | ------------- | ------------ | ------------------------------------------------------------------------------- |
+| `check_manifest(manifest_json: str)` | — (raw JSON)  | `typing.Any` | Dry-run validation; returns canonical string, SHA-256, and criterion count.     |
+| `get_agreement(id: str)`             | Agreement ID  | `typing.Any` | Structured agreement.                                                           |
+| `get_agreement_json(id: str)`        | Agreement ID  | `str`        | Canonical JSON for debugging.                                                   |
+| `get_manifest(id: str)`              | Agreement ID  | `str`        | Canonical manifest JSON.                                                        |
+| `get_manifest_hash(id: str)`         | Agreement ID  | `str`        | SHA-256 of canonical manifest.                                                  |
+| `get_submission(id: str)`            | Submission ID | `typing.Any` | Structured submission.                                                          |
+| `get_verdict(id: str)`               | Verdict ID    | `typing.Any` | Structured verdict.                                                             |
+| `get_verdict_json(id: str)`          | Verdict ID    | `str`        | Canonical JSON verdict.                                                         |
+| `get_challenge(id: str)`             | Challenge ID  | `typing.Any` | Structured challenge.                                                           |
+| `get_status(id: str)`                | Agreement ID  | `str`        | Current agreement status.                                                       |
+| `get_claim(addr: Address)`           | Address       | `u256`       | Unwithdrawn claim.                                                              |
+| `get_totals()`                       | —             | `typing.Any` | `total_locked` and `self.balance`. Use `get_claim(addr)` for individual claims. |
+| `get_constants()`                    | —             | `typing.Any` | Limits and version.                                                             |
+| `preview_payout(id: str)`            | Agreement ID  | `typing.Any` | Buyer/seller payout from the latest verdict.                                    |
 
 Use `get_agreement(id).verdict_id` to find the verdict ID, `get_agreement(id).submission_id` for the submission ID, and `get_agreement(id).challenge_id` for the challenge ID. View methods must not mutate state and must not call `gl.nondet`.
 
@@ -542,17 +534,17 @@ It never stores state, so clients can validate a manifest before paying gas.
 
 ### 6.2 Field rules
 
-| Field | Type | Required | Rules |
-|---|---|---|---|
-| `schema` | string | yes | Exactly `"presense.manifest.v1"`. |
-| `version` | integer | yes | Exactly `1`. |
-| `title` | string | yes | 1–200 chars. |
-| `description` | string | yes | 1–2000 chars. |
-| `artifact` | object | no | Informational; not used for scoring. |
-| `criteria` | array | yes | 1–20 items; unique `id`; weights sum to 100. |
-| `decision_policy` | object | yes | See §6.4. |
-| `evidence_policy` | object | yes | See §6.5. |
-| `metadata` | object | no | Arbitrary JSON; not used for scoring. |
+| Field             | Type    | Required | Rules                                        |
+| ----------------- | ------- | -------- | -------------------------------------------- |
+| `schema`          | string  | yes      | Exactly `"presense.manifest.v1"`.            |
+| `version`         | integer | yes      | Exactly `1`.                                 |
+| `title`           | string  | yes      | 1–200 chars.                                 |
+| `description`     | string  | yes      | 1–2000 chars.                                |
+| `artifact`        | object  | no       | Informational; not used for scoring.         |
+| `criteria`        | array   | yes      | 1–20 items; unique `id`; weights sum to 100. |
+| `decision_policy` | object  | yes      | See §6.4.                                    |
+| `evidence_policy` | object  | yes      | See §6.5.                                    |
+| `metadata`        | object  | no       | Arbitrary JSON; not used for scoring.        |
 
 Unknown fields are rejected at every schema level. Put vendor extensions under `metadata`, never beside a defined field.
 
@@ -574,15 +566,15 @@ Unknown fields are rejected at every schema level. Put vendor extensions under `
 }
 ```
 
-| Field | Type | Required | Rules |
-|---|---|---|---|
-| `id` | string | yes | 1–32 chars; unique; `[A-Za-z0-9_-]+`. |
-| `title` | string | yes | 1–200 chars. |
-| `kind` | string | yes | `"objective"` or `"subjective"`. |
-| `check` | string | yes | One of the supported checks in §7. |
-| `weight` | integer | yes | 1–100; sum of all weights = 100. |
-| `mandatory` | boolean | yes | If true, failure forces `REJECT`. |
-| `params` | object | yes | Check-specific. |
+| Field       | Type    | Required | Rules                                 |
+| ----------- | ------- | -------- | ------------------------------------- |
+| `id`        | string  | yes      | 1–32 chars; unique; `[A-Za-z0-9_-]+`. |
+| `title`     | string  | yes      | 1–200 chars.                          |
+| `kind`      | string  | yes      | `"objective"` or `"subjective"`.      |
+| `check`     | string  | yes      | One of the supported checks in §7.    |
+| `weight`    | integer | yes      | 1–100; sum of all weights = 100.      |
+| `mandatory` | boolean | yes      | If true, failure forces `REJECT`.     |
+| `params`    | object  | yes      | Check-specific.                       |
 
 `kind` must match the check classification in §7: the first four checks are `objective`; `llm_rubric` is `subjective`.
 
@@ -599,14 +591,14 @@ Unknown fields are rejected at every schema level. Put vendor extensions under `
 }
 ```
 
-| Field | Type | Required | Rules |
-|---|---|---|---|
-| `accept_threshold` | integer | yes | 0–100. |
-| `partial_threshold` | integer | yes | 0–100; `partial_threshold <= accept_threshold`. |
-| `mandatory_must_pass` | boolean | yes | v1 requires `true`. |
-| `missing_evidence` | string | yes | `"UNDETERMINED"` or `"REJECT"`. |
-| `partial_payout` | string | yes | v1 requires `"pro_rata"`. |
-| `score_rounding` | string | yes | v1 requires `"floor"`. |
+| Field                 | Type    | Required | Rules                                           |
+| --------------------- | ------- | -------- | ----------------------------------------------- |
+| `accept_threshold`    | integer | yes      | 0–100.                                          |
+| `partial_threshold`   | integer | yes      | 0–100; `partial_threshold <= accept_threshold`. |
+| `mandatory_must_pass` | boolean | yes      | v1 requires `true`.                             |
+| `missing_evidence`    | string  | yes      | `"UNDETERMINED"` or `"REJECT"`.                 |
+| `partial_payout`      | string  | yes      | v1 requires `"pro_rata"`.                       |
+| `score_rounding`      | string  | yes      | v1 requires `"floor"`.                          |
 
 ### 6.5 Evidence policy
 
@@ -622,15 +614,15 @@ Unknown fields are rejected at every schema level. Put vendor extensions under `
 }
 ```
 
-| Field | Type | Required | Rules |
-|---|---|---|---|
-| `allowed_domains` | array | yes | 1–20 non-empty strings. Exact domain or `*.example.com`. |
-| `require_https` | boolean | yes | v1 requires `true`. |
-| `max_bytes_per_source` | integer | yes | 1,000–5,000,000. |
-| `max_total_bytes` | integer | yes | 1,000–20,000,000. |
-| `max_sources_per_criterion` | integer | yes | 1–5. |
-| `allow_redirects` | boolean | yes | v1 requires `true`. |
-| `max_redirects` | integer | yes | 0–3. |
+| Field                       | Type    | Required | Rules                                                    |
+| --------------------------- | ------- | -------- | -------------------------------------------------------- |
+| `allowed_domains`           | array   | yes      | 1–20 non-empty strings. Exact domain or `*.example.com`. |
+| `require_https`             | boolean | yes      | v1 requires `true`.                                      |
+| `max_bytes_per_source`      | integer | yes      | 1,000–5,000,000.                                         |
+| `max_total_bytes`           | integer | yes      | 1,000–20,000,000.                                        |
+| `max_sources_per_criterion` | integer | yes      | 1–5.                                                     |
+| `allow_redirects`           | boolean | yes      | v1 requires `true`.                                      |
+| `max_redirects`             | integer | yes      | 0–3.                                                     |
 
 **Domain matching:**
 
@@ -660,11 +652,11 @@ Unknown fields are rejected at every schema level. Put vendor extensions under `
 }
 ```
 
-| Param | Type | Required | Rules |
-|---|---|---|---|
-| `url` | string | yes | Must pass evidence policy. |
-| `expected_status` | int or array | yes | 100–599; one or more accepted statuses. |
-| `method` | string | no | `GET` or `HEAD`; default `GET`. |
+| Param             | Type         | Required | Rules                                   |
+| ----------------- | ------------ | -------- | --------------------------------------- |
+| `url`             | string       | yes      | Must pass evidence policy.              |
+| `expected_status` | int or array | yes      | 100–599; one or more accepted statuses. |
+| `method`          | string       | no       | `GET` or `HEAD`; default `GET`.         |
 
 **Pass:** the fetched response status is in the expected set.
 
@@ -685,11 +677,11 @@ Unknown fields are rejected at every schema level. Put vendor extensions under `
 }
 ```
 
-| Param | Type | Required | Rules |
-|---|---|---|---|
-| `url` | string | yes | Must pass evidence policy. |
-| `required_keys` | array | yes | 1–50 dot paths. |
-| `types` | object | no | Map of dot path → `"string"`, `"number"`, `"boolean"`, `"object"`, `"array"`, `"null"`. |
+| Param           | Type   | Required | Rules                                                                                   |
+| --------------- | ------ | -------- | --------------------------------------------------------------------------------------- |
+| `url`           | string | yes      | Must pass evidence policy.                                                              |
+| `required_keys` | array  | yes      | 1–50 dot paths.                                                                         |
+| `types`         | object | no       | Map of dot path → `"string"`, `"number"`, `"boolean"`, `"object"`, `"array"`, `"null"`. |
 
 **Pass:** every dot path exists and, when a type is declared, matches.
 
@@ -706,10 +698,10 @@ Unknown fields are rejected at every schema level. Put vendor extensions under `
 }
 ```
 
-| Param | Type | Required | Rules |
-|---|---|---|---|
-| `url` | string | yes | Must pass evidence policy. |
-| `sha256` | string | yes | 64 hex chars, case-insensitive. |
+| Param    | Type   | Required | Rules                           |
+| -------- | ------ | -------- | ------------------------------- |
+| `url`    | string | yes      | Must pass evidence policy.      |
+| `sha256` | string | yes      | 64 hex chars, case-insensitive. |
 
 **Pass:** SHA-256 of the fetched bytes equals `sha256`.
 
@@ -725,11 +717,11 @@ Unknown fields are rejected at every schema level. Put vendor extensions under `
 }
 ```
 
-| Param | Type | Required | Rules |
-|---|---|---|---|
-| `url` | string | yes | Must pass evidence policy. |
-| `phrases` | array | yes | 1–20 non-empty strings; each ≤ 200 chars. |
-| `case_sensitive` | boolean | no | Default `false`. |
+| Param            | Type    | Required | Rules                                     |
+| ---------------- | ------- | -------- | ----------------------------------------- |
+| `url`            | string  | yes      | Must pass evidence policy.                |
+| `phrases`        | array   | yes      | 1–20 non-empty strings; each ≤ 200 chars. |
+| `case_sensitive` | boolean | no       | Default `false`.                          |
 
 **Pass:** every phrase appears in the normalized text.
 
@@ -748,12 +740,12 @@ Unknown fields are rejected at every schema level. Put vendor extensions under `
 }
 ```
 
-| Param | Type | Required | Rules |
-|---|---|---|---|
-| `evidence_url` | string | yes | Must pass evidence policy. |
-| `rubric` | string | yes | 20–4000 chars. |
-| `threshold` | integer | yes | 0–10. |
-| `max_chars` | integer | no | 1000–50000; default 20000. |
+| Param          | Type    | Required | Rules                      |
+| -------------- | ------- | -------- | -------------------------- |
+| `evidence_url` | string  | yes      | Must pass evidence policy. |
+| `rubric`       | string  | yes      | 20–4000 chars.             |
+| `threshold`    | integer | yes      | 0–10.                      |
+| `max_chars`    | integer | no       | 1000–50000; default 20000. |
 
 **LLM output:**
 
@@ -825,12 +817,12 @@ If the quote is not found, the result is a failure, even if the score is high.
 
 ### 8.3 Payout rules
 
-| Decision | Buyer payout | Seller payout |
-|---|---|---|
-| `ACCEPT` | `0` | `escrow` |
-| `PARTIAL` | `escrow - floor(escrow * score / 100)` | `floor(escrow * score / 100)` |
-| `REJECT` | `escrow` | `0` |
-| `UNDETERMINED` | no payout | no payout |
+| Decision       | Buyer payout                           | Seller payout                 |
+| -------------- | -------------------------------------- | ----------------------------- |
+| `ACCEPT`       | `0`                                    | `escrow`                      |
+| `PARTIAL`      | `escrow - floor(escrow * score / 100)` | `floor(escrow * score / 100)` |
+| `REJECT`       | `escrow`                               | `0`                           |
+| `UNDETERMINED` | no payout                              | no payout                     |
 
 **Invariant:** `payout_buyer + payout_seller == escrow`.
 
@@ -840,42 +832,41 @@ If the quote is not found, the result is a failure, even if the score is high.
 
 ## 9. Error codes
 
-| Code | Raised when |
-|---|---|
-| `E_BAD_ID` | Agreement ID is malformed. |
-| `E_AGREEMENT_EXISTS` | Agreement ID already exists. |
-| `E_SELF_AGREEMENT` | Buyer and seller are the same address. |
-| `E_ZERO_ADDRESS` | Seller is the zero address or the contract itself. |
-| `E_NOT_FOUND` | Agreement, submission, verdict, or challenge not found. |
-| `E_UNAUTHORIZED` | Caller is not the required party. |
-| `E_INVALID_STATE` | Action is not allowed in the current state. |
-| `E_ESCROW_ZERO` | `gl.message.value == 0` on create. |
-| `E_DEADLINE_INVALID` | Deadline is in the past or too soon. |
-| `E_DEADLINE_PASSED` | Action requires a deadline that has not passed. |
-| `E_DEADLINE_NOT_PASSED` | Expiry requires the deadline to have passed. |
-| `E_WINDOW_INVALID` | Challenge window is outside allowed bounds. |
-| `E_MANIFEST_INVALID` | Manifest fails schema or semantic validation. |
-| `E_MANIFEST_TOO_LARGE` | Canonical manifest exceeds 16 KiB. |
-| `E_URL_INVALID` | URL is malformed, non-HTTPS, or private. |
-| `E_EVIDENCE_DOMAIN` | URL is not in `allowed_domains`. |
-| `E_ARTIFACT_COUNT` | Artifact/evidence URL count is outside bounds. |
-| `E_ARTIFACT_MISMATCH` | URL and hash arrays have different lengths. |
-| `E_BAD_HASH` | Hash is not empty and not 64 hex chars. |
-| `E_REASON_INVALID` | Challenge reason length is invalid. |
-| `E_CHALLENGE_WINDOW_CLOSED` | Challenge submitted after the window. |
-| `E_CHALLENGE_LIMIT` | Agreement already has a challenge. |
-| `E_NO_SUBMISSION` | Evaluation requires a submission. |
-| `E_NO_VERDICT` | Settlement requires a verdict. |
-| `E_CHALLENGE_WINDOW_OPEN` | Settlement attempted before the window closes. |
-| `E_ALREADY_SUBMITTED` | Expiry attempted after submission. |
-| `E_EVIDENCE_MISSING` | Required evidence could not be fetched. |
-| `E_CHECK_UNSUPPORTED` | Evaluation encounters a check type it cannot execute. Manifest creation rejects unknown checks as `E_MANIFEST_INVALID`. |
-| `E_UNDETERMINED` | Consensus could not produce a reliable verdict. |
-| `E_CLAIM_ZERO` | Withdraw called with no claim. |
-| `E_BAD_RECIPIENT_KIND` | Withdraw kind is not `"evm"` or `"ic"`. |
-| `E_DIRECT_TRANSFER` | Value sent without calling `create_agreement`. |
+| Code                        | Raised when                                                                                                             |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `E_BAD_ID`                  | Agreement ID is malformed.                                                                                              |
+| `E_AGREEMENT_EXISTS`        | Agreement ID already exists.                                                                                            |
+| `E_SELF_AGREEMENT`          | Buyer and seller are the same address.                                                                                  |
+| `E_ZERO_ADDRESS`            | Seller is the zero address or the contract itself.                                                                      |
+| `E_NOT_FOUND`               | Agreement, submission, verdict, or challenge not found.                                                                 |
+| `E_UNAUTHORIZED`            | Caller is not the required party.                                                                                       |
+| `E_INVALID_STATE`           | Action is not allowed in the current state.                                                                             |
+| `E_ESCROW_ZERO`             | `gl.message.value == 0` on create.                                                                                      |
+| `E_DEADLINE_INVALID`        | Deadline is in the past or too soon.                                                                                    |
+| `E_DEADLINE_PASSED`         | Action requires a deadline that has not passed.                                                                         |
+| `E_DEADLINE_NOT_PASSED`     | Expiry requires the deadline to have passed.                                                                            |
+| `E_WINDOW_INVALID`          | Challenge window is outside allowed bounds.                                                                             |
+| `E_MANIFEST_INVALID`        | Manifest fails schema or semantic validation.                                                                           |
+| `E_MANIFEST_TOO_LARGE`      | Canonical manifest exceeds 16 KiB.                                                                                      |
+| `E_URL_INVALID`             | URL is malformed, non-HTTPS, or private.                                                                                |
+| `E_EVIDENCE_DOMAIN`         | URL is not in `allowed_domains`.                                                                                        |
+| `E_ARTIFACT_COUNT`          | Artifact/evidence URL count is outside bounds.                                                                          |
+| `E_ARTIFACT_MISMATCH`       | URL and hash arrays have different lengths.                                                                             |
+| `E_BAD_HASH`                | Hash is not empty and not 64 hex chars.                                                                                 |
+| `E_REASON_INVALID`          | Challenge reason length is invalid.                                                                                     |
+| `E_CHALLENGE_WINDOW_CLOSED` | Challenge submitted after the window.                                                                                   |
+| `E_CHALLENGE_LIMIT`         | Agreement already has a challenge.                                                                                      |
+| `E_NO_SUBMISSION`           | Evaluation requires a submission.                                                                                       |
+| `E_NO_VERDICT`              | Settlement requires a verdict.                                                                                          |
+| `E_CHALLENGE_WINDOW_OPEN`   | Settlement attempted before the window closes.                                                                          |
+| `E_ALREADY_SUBMITTED`       | Expiry attempted after submission.                                                                                      |
+| `E_EVIDENCE_MISSING`        | Required evidence could not be fetched.                                                                                 |
+| `E_CHECK_UNSUPPORTED`       | Evaluation encounters a check type it cannot execute. Manifest creation rejects unknown checks as `E_MANIFEST_INVALID`. |
+| `E_UNDETERMINED`            | Consensus could not produce a reliable verdict.                                                                         |
+| `E_CLAIM_ZERO`              | Withdraw called with no claim.                                                                                          |
+| `E_BAD_RECIPIENT_KIND`      | Withdraw kind is not `"evm"` or `"ic"`.                                                                                 |
 
-All errors use `gl.vm.UserError("CODE: human-readable message")`.
+All listed contract-level errors use `gl.vm.UserError("CODE: human-readable message")`. Value-only calls are rejected by GenVM's dispatcher before contract code runs.
 
 ---
 
