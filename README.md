@@ -4,7 +4,7 @@
 
 Presense is a reusable GenLayer Intelligent Contract primitive that adjudicates whether agent-delivered work satisfies an agreed **Acceptance Manifest** (the Acceptance Test Manifest), then settles escrow according to a structured verdict.
 
-> **Status:** Phases 0–5 are implemented. The contract supports manifest validation, objective and subjective evaluation, independent validator comparison, challenges, verdict payouts, settlement, and pull-payment withdrawal. Phase 6 hardening and live-network validation remain.
+> **Status:** Phases 0–6 are implemented. The contract supports manifest validation, objective and subjective evaluation, independent validator comparison, challenges, verdict payouts, settlement, and pull-payment withdrawal. External peer review and Phase 7 live-network validation remain.
 
 ---
 
@@ -28,7 +28,8 @@ Expected:
 ✓ Validation passed
   Contract: Presense
   Methods: 22 (12 view, 10 write)
-131 passed
+  145 passed
+  contracts/Presense.py 86% coverage (branches included)
 ```
 
 For coverage:
@@ -147,7 +148,9 @@ presense/
 │   │   ├── test_lifecycle.py
 │   │   ├── test_checks_objective.py
 │   │   ├── test_checks_subjective.py
+│   │   ├── test_validator.py
 │   │   ├── test_settlement.py
+│   │   ├── test_security.py
 │   │   └── test_smoke.py
 │   └── integration/   # live-network tests
 ├── deploy/            # deployment scripts (planned)

@@ -255,7 +255,7 @@ Use `gl.nondet.web.request` inside the non-deterministic block. Do not fetch in 
 
 ## 7. Phase 4 — Subjective checks and consensus
 
-**Status: implementation complete.** Direct tests cover honest evaluation, a schema-valid lie, prompt injection, and score-tolerance boundaries. Dedicated wrong-decision and pass-mismatch tests remain open in the definition of done.
+**Status: implementation complete.** Direct validator tests cover honest evaluation, a schema-valid lie, prompt injection, wrong decision, wrong objective pass, subjective pass mismatch, invalid quotes, and score-tolerance boundaries.
 
 ### Goal
 
@@ -289,9 +289,9 @@ A working `evaluate` that stores a verdict only when the leader and validator ag
 
 - [x] Honest leader passes.
 - [x] Schema-valid lie fails.
-- [ ] Wrong decision fails.
-- [ ] Wrong objective pass fails.
-- [ ] Subjective pass mismatch fails.
+- [x] Wrong decision fails.
+- [x] Wrong objective pass fails.
+- [x] Subjective pass mismatch fails.
 - [x] Invalid quote fails.
 - [x] Score outside tolerance fails.
 - [x] Score within tolerance passes.
@@ -349,28 +349,30 @@ A complete agreement lifecycle from creation to withdrawal.
 
 ## 9. Phase 6 — Hardening
 
+**Status: self-hardening complete; external peer review remains pending.**
+
 ### Goal
 
 Make the contract defensible before deployment.
 
 ### Tasks
 
-- [ ] Run `genvm-lint check`.
-- [ ] Run the full direct suite with coverage.
-- [ ] Run adversarial tests.
-- [ ] Run property-based payout tests.
-- [ ] Review every error code.
-- [ ] Review every state transition.
-- [ ] Review every external fetch.
-- [ ] Review every value movement.
-- [ ] Check storage types (`TreeMap`, `DynArray`, `u256`).
-- [ ] Check for unbounded loops.
-- [ ] Check for `dict`/`list` storage.
-- [ ] Check for admin or upgrade hooks (should be none).
-- [ ] Update docs if the interface changed.
-- [ ] Ask a peer reviewer to read the contract against the spec.
-- [ ] Fix findings.
-- [ ] Re-run everything.
+- [x] Run `genvm-lint check`.
+- [x] Run the full direct suite with coverage (145 tests; 86% branch coverage).
+- [x] Run adversarial tests.
+- [x] Run exhaustive payout conservation tests.
+- [x] Review every error code.
+- [x] Review every state transition.
+- [x] Review every external fetch.
+- [x] Review every value movement.
+- [x] Check storage types (`TreeMap`, `DynArray`, `u256`).
+- [x] Check for unbounded loops.
+- [x] Check for `dict`/`list` storage.
+- [x] Check for admin or upgrade hooks (none are present).
+- [x] Update docs; no public interface changed.
+- [ ] Ask an external peer reviewer to read the contract against the spec (not available in this session).
+- [x] Fix findings from the self-review.
+- [x] Re-run lint and the full direct suite.
 
 ### Deliverable
 
@@ -378,12 +380,14 @@ A release candidate with no known critical issues.
 
 ### Definition of done
 
-- [ ] Lint exits 0.
-- [ ] Coverage ≥ 85%.
-- [ ] All tests pass.
-- [ ] No critical or high findings open.
-- [ ] Docs match code.
-- [ ] The portal narrative is drafted.
+- [x] Lint exits 0.
+- [x] Coverage ≥ 85%.
+- [x] All direct tests pass.
+- [x] No known critical or high findings remain from the self-review.
+- [x] Docs match code.
+- [x] The portal narrative is drafted.
+
+**Review note:** Self-review fixed two validator issues: malformed leader summaries could pass equivalence and fail during materialization, and zero-score subjective failures with no quote were incorrectly rejected. External peer review and live-network behavior remain unverified; see the documented transparent-redirect and transfer-message limitations.
 
 ---
 

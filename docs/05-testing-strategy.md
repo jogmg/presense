@@ -227,7 +227,7 @@ def make_manifest(**overrides):
 
 ### 5.1 Manifest parsing
 
-**Status: implemented** in `tests/direct/test_manifest.py` (95 direct tests total after Phase 1).
+**Status: implemented** in `tests/direct/test_manifest.py`. The full direct suite currently contains 145 tests; manifest parsing cases remain part of that suite.
 
 | Test                                      | Input               | Expected                          |
 | ----------------------------------------- | ------------------- | --------------------------------- |
@@ -383,6 +383,8 @@ Expected:
 
 Use `direct_vm.run_validator(...)` to exercise the custom validator with a chosen leader result.
 
+The outstanding adversarial cases are implemented in `tests/direct/test_validator.py`: wrong decision, wrong objective pass, and subjective pass mismatch are each rejected by `direct_vm.run_validator(...)`. Malformed materialized fields and the empty-quote rule for zero-score subjective failures are covered in `tests/direct/test_checks_subjective.py`.
+
 ### 9.1 Cases
 
 | Test                                                        | Leader payload                  | Expected                        |
@@ -458,6 +460,8 @@ Also test:
 - Mandatory failure at high score.
 - Missing evidence with both policies.
 
+The payout property is implemented in `tests/direct/test_security.py` as a deterministic sweep of every score from 0 through 100 across representative small and large escrow values. It calls the contract's payout helper and checks exact floor rounding and conservation.
+
 ---
 
 ## 11. Challenge tests
@@ -480,6 +484,8 @@ Direct challenge validation, counter-evidence re-evaluation, and challenge-windo
 ---
 
 ## 12. Security tests
+
+Focused security invariants and payout boundary cases live in `tests/direct/test_security.py`; validator-specific attacks live in `tests/direct/test_validator.py`.
 
 | Test                                               | Expected                                                                                         |
 | -------------------------------------------------- | ------------------------------------------------------------------------------------------------ |

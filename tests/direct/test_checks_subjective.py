@@ -308,7 +308,9 @@ def test_equivalence_allows_three_point_overall_score_variance(direct_vm, direct
         "weight": 70,
         "mandatory": True,
         "status": "PASS",
+        "reason": "HTTP 200",
         "evidence_url": "https://api.example.com/health",
+        "evidence_quote": "",
     }
     mine_subjective = {
         "criterion_id": "C2",
@@ -319,6 +321,7 @@ def test_equivalence_allows_three_point_overall_score_variance(direct_vm, direct
         "weight": 30,
         "mandatory": True,
         "status": "PASS",
+        "reason": "The documentation meets the rubric.",
         "evidence_url": "https://docs.example.com/overview",
         "evidence_quote": "Authentication uses the X-API-Key header.",
         "_source_text": "Authentication uses the X-API-Key header.",
@@ -335,6 +338,7 @@ def test_equivalence_allows_three_point_overall_score_variance(direct_vm, direct
         "manifest_hash": "hash",
         "decision": "ACCEPT",
         "score": 94,
+        "summary": "The criteria passed.",
         "results": [objective, leader_subjective],
     }
 
@@ -364,7 +368,9 @@ def test_equivalence_rejects_over_three_point_score_variance(direct_vm, direct_d
         "weight": 70,
         "mandatory": True,
         "status": "PASS",
+        "reason": "HTTP 200",
         "evidence_url": "https://api.example.com/health",
+        "evidence_quote": "",
     }
     mine_subjective = {
         "criterion_id": "C2",
@@ -391,7 +397,85 @@ def test_equivalence_rejects_over_three_point_score_variance(direct_vm, direct_d
         "manifest_hash": "hash",
         "decision": "ACCEPT",
         "score": 97,
+        "summary": "The criteria passed.",
         "results": [objective, leader_subjective],
     }
 
     assert contract._equivalent(leader, mine, manifest) is False
+
+
+def test_equivalence_rejects_payload_missing_materialized_summary(direct_vm, direct_deploy):
+    contract = direct_deploy("contracts/Presense.py")
+    manifest = {
+        "decision_policy": {
+            "accept_threshold": 80,
+            "partial_threshold": 50,
+            "mandatory_must_pass": True,
+            "missing_evidence": "UNDETERMINED",
+        },
+        "criteria": [{"id": "C1", "params": {}}],
+    }
+    result = {
+        "criterion_id": "C1",
+        "kind": "objective",
+        "check": "http_status",
+        "passed": True,
+        "score": 10,
+        "weight": 100,
+        "mandatory": True,
+        "status": "PASS",
+        "reason": "HTTP 200",
+        "evidence_url": "https://api.example.com/health",
+        "evidence_quote": "",
+    }
+    mine = {
+        "manifest_hash": "hash",
+        "decision": "ACCEPT",
+        "score": 100,
+        "results": [result],
+    }
+    leader = {
+        "schema": "presense.leader.v1",
+        "manifest_hash": "hash",
+        "decision": "ACCEPT",
+        "score": 100,
+        "results": [result],
+    }
+
+    assert contract._equivalent(leader, mine, manifest) is False
+
+
+def test_equivalence_accepts_failed_subjective_result_without_quote(direct_vm, direct_deploy):
+    contract = direct_deploy("contracts/Presense.py")
+    manifest = {
+        "decision_policy": {
+            "accept_threshold": 80,
+            "partial_threshold": 50,
+            "mandatory_must_pass": True,
+            "missing_evidence": "REJECT",
+        },
+        "criteria": [{"id": "C1", "params": {"threshold": 7}}],
+    }
+    result = {
+        "criterion_id": "C1",
+        "kind": "subjective",
+        "check": "llm_rubric",
+        "passed": False,
+        "score": 0,
+        "weight": 100,
+        "mandatory": True,
+        "status": "FAIL",
+        "reason": "The rubric was not met.",
+        "evidence_url": "https://docs.example.com/overview",
+        "evidence_quote": "",
+        "_source_text": "",
+    }
+    mine = {
+        "manifest_hash": "hash",
+        "decision": "REJECT",
+        "score": 0,
+        "results": [result],
+    }
+    leader = dict(mine, schema="presense.leader.v1", summary="The criterion failed.")
+
+    assert contract._equivalent(leader, mine, manifest) is True

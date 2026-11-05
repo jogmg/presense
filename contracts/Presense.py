@@ -1439,13 +1439,28 @@ class Presense(gl.Contract):
         return payload
 
     def _equivalent(self, leader: dict[str, typing.Any], mine: dict[str, typing.Any], manifest: dict[str, typing.Any]) -> bool:
+        if not isinstance(leader, dict) or not isinstance(mine, dict):
+            return False
         if leader.get("schema") != "presense.leader.v1":
+            return False
+        summary = leader.get("summary")
+        if not isinstance(summary, str) or len(summary) > MAX_REASON_CHARS:
             return False
         if leader.get("manifest_hash") != mine.get("manifest_hash"):
             return False
         if leader.get("decision") != mine.get("decision"):
             return False
-        if abs(int(leader.get("score", -999)) - int(mine.get("score", -999))) > 3:
+        leader_score = leader.get("score")
+        mine_score = mine.get("score")
+        if (
+            isinstance(leader_score, bool)
+            or not isinstance(leader_score, int)
+            or leader_score < 0
+            or leader_score > 100
+            or isinstance(mine_score, bool)
+            or not isinstance(mine_score, int)
+            or abs(leader_score - mine_score) > 3
+        ):
             return False
         leader_results = leader.get("results")
         mine_results = mine.get("results")
@@ -1457,6 +1472,8 @@ class Presense(gl.Contract):
         calculated_score_tenths = 0
         criteria_by_id = {criterion["id"]: criterion for criterion in manifest["criteria"]}
         for left, right in zip(leader_results, mine_results):
+            if not isinstance(left, dict):
+                return False
             if left.get("criterion_id") != right.get("criterion_id"):
                 return False
             if left.get("kind") != right.get("kind"):
@@ -1471,11 +1488,28 @@ class Presense(gl.Contract):
                 return False
             if left.get("mandatory") != right.get("mandatory"):
                 return False
-            left_score = int(left.get("score", -999))
+            if not isinstance(left.get("passed"), bool):
+                return False
+            if not isinstance(left.get("mandatory"), bool):
+                return False
+            left_score = left.get("score")
+            if isinstance(left_score, bool) or not isinstance(left_score, int):
+                return False
             if left_score < 0 or left_score > 10:
                 return False
-            calculated_score_tenths += left_score * int(left.get("weight", 0))
+            left_weight = left.get("weight")
+            if isinstance(left_weight, bool) or not isinstance(left_weight, int):
+                return False
+            reason = left.get("reason")
+            evidence_quote = left.get("evidence_quote")
+            if not isinstance(reason, str) or len(reason) > MAX_REASON_CHARS:
+                return False
+            if not isinstance(evidence_quote, str) or len(evidence_quote) > MAX_LLM_CHARS:
+                return False
+            calculated_score_tenths += left_score * left_weight
             if right.get("kind") == "objective" and left_score != (10 if left.get("passed") else 0):
+                return False
+            if right.get("kind") == "objective" and evidence_quote != right.get("evidence_quote", ""):
                 return False
             if right.get("kind") == "subjective":
                 if abs(left_score - int(right.get("score", -999))) > 1:
@@ -1484,20 +1518,43 @@ class Presense(gl.Contract):
                 if criterion is None or left.get("passed") != (left_score >= int(criterion["params"]["threshold"])):
                     return False
                 quote = left.get("evidence_quote")
-                if not quote or len(str(quote)) < 20:
+                if not isinstance(quote, str):
                     return False
                 evidence_text = right.get("_source_text", "")
-                if not _quote_exists(quote, evidence_text):
+                if left.get("passed") or quote:
+                    if not _quote_exists(quote, evidence_text):
+                        return False
+                elif left_score != 0:
                     return False
             if left.get("evidence_url") != right.get("evidence_url"):
                 return False
 
         if int(leader.get("score", -999)) != min(100, calculated_score_tenths // 10):
             return False
-        expected = self._derive_decision(leader_results, int(leader.get("score", 0)), manifest["decision_policy"])
+        expected = self._derive_decision(leader_results, leader_score, manifest["decision_policy"])
         if leader.get("decision") != expected:
             return False
         return True
+
+    def _compute_payouts(
+        self, escrow: int, score: int, decision: str
+    ) -> tuple[int, int]:
+        if escrow <= 0 or isinstance(score, bool) or not isinstance(score, int):
+            _fail("E_PAYOUT_INVALID", "escrow and score must be valid integers")
+        if score < 0 or score > 100:
+            _fail("E_PAYOUT_INVALID", "verdict score must be between 0 and 100")
+        if decision == "ACCEPT":
+            buyer_payout, seller_payout = 0, escrow
+        elif decision == "PARTIAL":
+            seller_payout = (escrow * score) // 100
+            buyer_payout = escrow - seller_payout
+        elif decision == "REJECT":
+            buyer_payout, seller_payout = escrow, 0
+        else:
+            _fail("E_UNDETERMINED", "verdict decision is undetermined")
+        if buyer_payout + seller_payout != escrow:
+            _fail("E_PAYOUT_INVALID", "computed payouts do not equal escrow")
+        return buyer_payout, seller_payout
 
     def _materialize_verdict(
         self,
@@ -1507,17 +1564,9 @@ class Presense(gl.Contract):
         escrow = int(agreement.escrow)
         score = int(accepted["score"])
         decision = accepted["decision"]
-        if decision == "ACCEPT":
-            seller_payout = escrow
-            buyer_payout = 0
-        elif decision == "PARTIAL":
-            seller_payout = (escrow * score) // 100
-            buyer_payout = escrow - seller_payout
-        elif decision == "REJECT":
-            seller_payout = 0
-            buyer_payout = escrow
-        else:
-            raise gl.vm.UserError("E_UNDETERMINED: verdict decision is undetermined")
+        buyer_payout, seller_payout = self._compute_payouts(
+            escrow, score, decision
+        )
         verdict_id = f"{agreement.id}:verdict:{int(agreement.challenge_count) + 1}"
         verdict = Verdict(
             id=verdict_id,

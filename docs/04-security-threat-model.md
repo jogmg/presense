@@ -498,6 +498,15 @@ Scope:
 - Re-test evidence.
 - Updated threat model.
 
+### Phase 6 self-review (2026-11-05)
+
+- Hardened leader payload validation for materialized summary, reason, score, weight, and quote fields before accepting consensus.
+- Corrected quote equivalence so a failed subjective result may use an empty quote only with score 0; passing results still require a verified quote.
+- Added direct-validator tests for wrong decision, wrong objective pass, and subjective pass mismatch.
+- Added exhaustive payout conservation coverage for scores 0–100 and representative escrow sizes.
+- Verified with `genvm-lint check` and the full direct suite: 145 passed, 86% branch coverage.
+- No known critical or high findings remain from this self-review. External peer review, Localnet, and Bradbury validation are still pending; the transparent-redirect and transfer-message semantics remain documented runtime risks.
+
 ---
 
 ## 8. Incident response

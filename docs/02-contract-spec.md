@@ -4,7 +4,7 @@
 **Version:** 0.1
 **Contract:** `contracts/Presense.py`
 **Runtime:** `py-genlayer` (magic comment below)
-**Status:** Phases 1–5 implemented (manifest core, lifecycle/escrow, objective checks, subjective evaluation, leader/validator consensus, challenge, payout, and settlement).
+**Status:** Phases 0–6 implemented (manifest core, lifecycle/escrow, objective checks, subjective evaluation, hardened leader/validator consensus, challenge, payout, settlement, and security tests). Phase 6 adds no public API methods.
 
 ---
 
