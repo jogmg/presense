@@ -119,6 +119,20 @@ class Submission:
 
 @allow_storage
 @dataclass
+class CriterionResult:
+    criterion_id: str
+    kind: str
+    check: str
+    passed: bool
+    score: u8
+    weight: u8
+    reason: str
+    evidence_url: str
+    evidence_quote: str
+
+
+@allow_storage
+@dataclass
 class Verdict:
     id: str
     agreement_id: str
@@ -128,10 +142,22 @@ class Verdict:
     payout_buyer: u256
     payout_seller: u256
     summary: str
-    results: str
+    results: DynArray[CriterionResult]
     evaluated_at: u256
     evaluator: Address
     challenge_deadline: u256
+
+
+@allow_storage
+@dataclass
+class Challenge:
+    id: str
+    agreement_id: str
+    challenger: Address
+    reason: str
+    evidence_urls: DynArray[str]
+    evidence_hashes: DynArray[str]
+    created_at: u256
 
 
 def _fail(code: str, message: str) -> typing.NoReturn:
@@ -1050,6 +1076,7 @@ class Presense(gl.Contract):
     agreements: TreeMap[str, Agreement]
     submissions: TreeMap[str, Submission]
     verdicts: TreeMap[str, Verdict]
+    challenges: TreeMap[str, Challenge]
     claims: TreeMap[Address, u256]
     total_locked: u256
 
@@ -1091,10 +1118,16 @@ class Presense(gl.Contract):
         self,
         criterion: dict[str, typing.Any],
         evidence_policy: dict[str, typing.Any],
+        supplemental_sources: list[dict[str, str]] | None = None,
+        budget: dict[str, int] | None = None,
     ) -> dict[str, typing.Any]:
         params = criterion["params"]
         evidence_url = params["evidence_url"]
-        fetched = _fetch(evidence_url, evidence_policy)
+        if budget is None:
+            budget = {"bytes_used": 0}
+        if supplemental_sources is None:
+            supplemental_sources = []
+        fetched = _fetch(evidence_url, evidence_policy, budget)
         if fetched["status"] == "MISSING":
             return _subjective_result(
                 criterion,
@@ -1106,12 +1139,73 @@ class Presense(gl.Contract):
                 "MISSING",
             )
 
-        text = fetched["body"].decode("utf-8", errors="replace")
+        source_contents = [
+            (evidence_url, fetched["body"].decode("utf-8", errors="replace"))
+        ]
+        seen_urls = [evidence_url]
+        seen_hashes = {evidence_url: hashlib.sha256(fetched["body"]).hexdigest()}
+        max_sources = int(evidence_policy["max_sources_per_criterion"])
+        for source in supplemental_sources:
+            source_url = source["url"]
+            expected_hash = source.get("sha256", "")
+            if source_url in seen_urls:
+                if expected_hash and seen_hashes[source_url].lower() != expected_hash.lower():
+                    return _subjective_result(
+                        criterion,
+                        False,
+                        0,
+                        "Evidence hash did not match the submitted hash",
+                        evidence_url,
+                        "",
+                        "MISSING",
+                    )
+                continue
+            if len(source_contents) >= max_sources:
+                break
+            supplemental = _fetch(source_url, evidence_policy, budget)
+            if supplemental["status"] == "MISSING":
+                return _subjective_result(
+                    criterion,
+                    False,
+                    0,
+                    supplemental["reason"],
+                    evidence_url,
+                    "",
+                    "MISSING",
+                )
+            actual_hash = hashlib.sha256(supplemental["body"]).hexdigest()
+            if expected_hash and actual_hash.lower() != expected_hash.lower():
+                return _subjective_result(
+                    criterion,
+                    False,
+                    0,
+                    "Evidence hash did not match the submitted hash",
+                    evidence_url,
+                    "",
+                    "MISSING",
+                )
+            seen_hashes[source_url] = actual_hash
+            source_contents.append(
+                (source_url, supplemental["body"].decode("utf-8", errors="replace"))
+            )
+            seen_urls.append(source_url)
+
         max_chars = int(params.get("max_chars", MAX_LLM_CHARS))
-        if len(text) > max_chars:
-            text = text[:max_chars]
-        text = text.replace("<<<EVIDENCE_START>>>", "[delimiter removed]")
-        text = text.replace("<<<EVIDENCE_END>>>", "[delimiter removed]")
+        source_headers = [f"SOURCE {index + 1}:\n" for index in range(len(source_contents))]
+        available_chars = max_chars - sum(len(header) for header in source_headers) - (2 * (len(source_headers) - 1))
+        per_source_chars = max(1, available_chars // len(source_contents))
+        text_parts = []
+        shown_source_contents = []
+        for index, (source_url, source_text) in enumerate(source_contents):
+            source_text = source_text.replace("<<<EVIDENCE_START>>>", "[delimiter removed]")
+            source_text = source_text.replace("<<<EVIDENCE_END>>>", "[delimiter removed]")
+            shown_text = source_text[:per_source_chars]
+            shown_source_contents.append((source_url, shown_text))
+            text_parts.append(source_headers[index] + shown_text)
+        text = "\n\n".join(text_parts)
+        evidence_text = "\n\n".join(
+            source_text for _, source_text in shown_source_contents
+        )
 
         prompt = (
             "You are an impartial acceptance evaluator for a software delivery agreement.\n"
@@ -1130,29 +1224,31 @@ class Presense(gl.Contract):
         raw = gl.nondet.exec_prompt(prompt)
         if isinstance(raw, bytes):
             raw = raw.decode("utf-8", errors="replace")
-        if not isinstance(raw, str):
+        if isinstance(raw, dict):
+            payload = raw
+        elif isinstance(raw, str):
+            cleaned = raw.strip()
+            if cleaned.startswith("```"):
+                cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+                cleaned = re.sub(r"\s*```\s*$", "", cleaned)
+            try:
+                payload = json.loads(cleaned)
+            except Exception:
+                return _subjective_result(
+                    criterion,
+                    False,
+                    0,
+                    "LLM output was not valid JSON",
+                    evidence_url,
+                    "",
+                    "FAIL",
+                )
+        else:
             return _subjective_result(
                 criterion,
                 False,
                 0,
                 "LLM returned a non-string result",
-                evidence_url,
-                "",
-                "FAIL",
-            )
-
-        cleaned = raw.strip()
-        if cleaned.startswith("```"):
-            cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
-            cleaned = re.sub(r"\s*```\s*$", "", cleaned)
-        try:
-            payload = json.loads(cleaned)
-        except Exception:
-            return _subjective_result(
-                criterion,
-                False,
-                0,
-                "LLM output was not valid JSON",
                 evidence_url,
                 "",
                 "FAIL",
@@ -1179,15 +1275,30 @@ class Presense(gl.Contract):
                 "FAIL",
             )
 
-        try:
-            score = int(payload["score"])
-        except Exception:
-            score = 0
-        pass_value = bool(payload.get("pass", False))
-        if not isinstance(payload.get("reason"), str):
-            payload["reason"] = ""
-        reason = str(payload.get("reason", "")[:MAX_REASON_CHARS])
-        quote = str(payload.get("evidence_quote", ""))
+        score_value = payload["score"]
+        pass_value = payload["pass"]
+        reason_value = payload["reason"]
+        quote_value = payload["evidence_quote"]
+        if (
+            isinstance(score_value, bool)
+            or not isinstance(score_value, int)
+            or not isinstance(pass_value, bool)
+            or not isinstance(reason_value, str)
+            or not reason_value.strip()
+            or not isinstance(quote_value, str)
+        ):
+            return _subjective_result(
+                criterion,
+                False,
+                0,
+                "LLM output field types were incorrect",
+                evidence_url,
+                "",
+                "FAIL",
+            )
+        score = score_value
+        reason = reason_value[:MAX_REASON_CHARS]
+        quote = quote_value
 
         if not isinstance(score, int) or score < 0 or score > 10:
             return _subjective_result(
@@ -1209,7 +1320,7 @@ class Presense(gl.Contract):
                 "",
                 "FAIL",
             )
-        if pass_value and not _quote_exists(quote, text):
+        if pass_value and not _quote_exists(quote, evidence_text):
             return _subjective_result(
                 criterion,
                 False,
@@ -1225,29 +1336,43 @@ class Presense(gl.Contract):
             bool(pass_value),
             score,
             reason or ("The rubric was met." if pass_value else "The rubric was not met."),
-            evidence_url,
+            next(
+                (
+                    source_url
+                    for source_url, source_text in shown_source_contents
+                    if pass_value and _quote_exists(quote, source_text)
+                ),
+                evidence_url,
+            ),
             quote,
             "PASS" if pass_value else "FAIL",
         )
-        result["_source_text"] = text
+        result["_source_text"] = evidence_text
         result["mandatory"] = bool(criterion.get("mandatory", False))
         return result
 
     def _build_verdict_payload(
         self,
         manifest: dict[str, typing.Any],
-        submission: Submission,
-        agreement: Agreement,
+        manifest_hash: str,
+        supplemental_sources: list[dict[str, str]] | None = None,
     ) -> dict[str, typing.Any]:
         policy = manifest["decision_policy"]
         evidence_policy = manifest["evidence_policy"]
+        budget = {"bytes_used": 0}
         results = []
-        total_weighted = 0
+        total_weighted_tenths = 0
         missing = False
         mandatory_failed = False
 
         for criterion in manifest["criteria"]:
-            result = self._run_subjective(criterion, evidence_policy) if criterion["kind"] == "subjective" else _run_objective(criterion, evidence_policy)
+            result = (
+                self._run_subjective(
+                    criterion, evidence_policy, supplemental_sources, budget
+                )
+                if criterion["kind"] == "subjective"
+                else _run_objective(criterion, evidence_policy, budget)
+            )
             if criterion["kind"] == "objective":
                 failed = result["status"] == "MISSING"
                 if failed:
@@ -1258,7 +1383,7 @@ class Presense(gl.Contract):
                         continue
                 if not result["passed"] and criterion["mandatory"]:
                     mandatory_failed = True
-                total_weighted += (result["score"] * criterion["weight"]) // 10
+                total_weighted_tenths += result["score"] * criterion["weight"]
                 result["mandatory"] = bool(criterion.get("mandatory", False))
                 results.append(result)
                 continue
@@ -1271,11 +1396,11 @@ class Presense(gl.Contract):
                     continue
             if not result["passed"] and criterion["mandatory"]:
                 mandatory_failed = True
-            total_weighted += (result["score"] * criterion["weight"]) // 10
+            total_weighted_tenths += result["score"] * criterion["weight"]
             result["mandatory"] = bool(criterion.get("mandatory", False))
             results.append(result)
 
-        score = min(100, max(0, total_weighted))
+        score = min(100, max(0, total_weighted_tenths // 10))
         if missing and policy["missing_evidence"] == "UNDETERMINED":
             decision = "UNDETERMINED"
         elif mandatory_failed and policy["mandatory_must_pass"]:
@@ -1289,7 +1414,7 @@ class Presense(gl.Contract):
 
         payload = {
             "schema": "presense.leader.v1",
-            "manifest_hash": agreement.manifest_hash,
+            "manifest_hash": manifest_hash,
             "decision": decision,
             "score": score,
             "summary": self._build_summary(results, decision, score),
@@ -1329,7 +1454,7 @@ class Presense(gl.Contract):
         if len(leader_results) != len(mine_results):
             return False
 
-        calculated_score = 0
+        calculated_score_tenths = 0
         criteria_by_id = {criterion["id"]: criterion for criterion in manifest["criteria"]}
         for left, right in zip(leader_results, mine_results):
             if left.get("criterion_id") != right.get("criterion_id"):
@@ -1349,7 +1474,7 @@ class Presense(gl.Contract):
             left_score = int(left.get("score", -999))
             if left_score < 0 or left_score > 10:
                 return False
-            calculated_score += (left_score * int(left.get("weight", 0))) // 10
+            calculated_score_tenths += left_score * int(left.get("weight", 0))
             if right.get("kind") == "objective" and left_score != (10 if left.get("passed") else 0):
                 return False
             if right.get("kind") == "subjective":
@@ -1367,7 +1492,7 @@ class Presense(gl.Contract):
             if left.get("evidence_url") != right.get("evidence_url"):
                 return False
 
-        if int(leader.get("score", -999)) != min(100, calculated_score):
+        if int(leader.get("score", -999)) != min(100, calculated_score_tenths // 10):
             return False
         expected = self._derive_decision(leader_results, int(leader.get("score", 0)), manifest["decision_policy"])
         if leader.get("decision") != expected:
@@ -1386,16 +1511,14 @@ class Presense(gl.Contract):
             seller_payout = escrow
             buyer_payout = 0
         elif decision == "PARTIAL":
-            seller_payout = int((score / 100) * escrow)
+            seller_payout = (escrow * score) // 100
             buyer_payout = escrow - seller_payout
         elif decision == "REJECT":
             seller_payout = 0
             buyer_payout = escrow
         else:
             raise gl.vm.UserError("E_UNDETERMINED: verdict decision is undetermined")
-        verdict_id = f"{agreement.id}:verdict"
-        if agreement.challenge_count > 0:
-            verdict_id = f"{agreement.id}:verdict:{int(agreement.challenge_count) + 1}"
+        verdict_id = f"{agreement.id}:verdict:{int(agreement.challenge_count) + 1}"
         verdict = Verdict(
             id=verdict_id,
             agreement_id=agreement.id,
@@ -1405,27 +1528,20 @@ class Presense(gl.Contract):
             payout_buyer=u256(buyer_payout),
             payout_seller=u256(seller_payout),
             summary=accepted["summary"],
-            results=json.dumps(
-                [
-                    {
-                        key: item[key]
-                        for key in (
-                            "criterion_id",
-                            "kind",
-                            "check",
-                            "passed",
-                            "score",
-                            "weight",
-                            "reason",
-                            "evidence_url",
-                            "evidence_quote",
-                        )
-                    }
-                    for item in accepted["results"]
-                ],
-                separators=(",", ":"),
-                ensure_ascii=False,
-            ),
+            results=[
+                CriterionResult(
+                    criterion_id=item["criterion_id"],
+                    kind=item["kind"],
+                    check=item["check"],
+                    passed=item["passed"],
+                    score=u8(item["score"]),
+                    weight=u8(item["weight"]),
+                    reason=item["reason"],
+                    evidence_url=item["evidence_url"],
+                    evidence_quote=item["evidence_quote"],
+                )
+                for item in accepted["results"]
+            ],
             evaluated_at=self._now(),
             evaluator=_as_address(gl.message.sender_address),
             challenge_deadline=u256(int(self._now()) + int(agreement.challenge_window)),
@@ -1444,14 +1560,38 @@ class Presense(gl.Contract):
             _fail("E_NO_SUBMISSION", "agreement has no submission")
 
         manifest = json.loads(agreement.manifest_json)
+        manifest_hash = agreement.manifest_hash
+        supplemental_sources = []
+        if agreement.challenge_id:
+            challenge = self.challenges.get(agreement.challenge_id)
+            if challenge is None:
+                _fail("E_NOT_FOUND", "agreement challenge does not exist")
+            for index in range(len(challenge.evidence_urls)):
+                supplemental_sources.append(
+                    {
+                        "url": challenge.evidence_urls[index],
+                        "sha256": challenge.evidence_hashes[index],
+                    }
+                )
+        for index in range(len(submission.artifact_urls)):
+            supplemental_sources.append(
+                {
+                    "url": submission.artifact_urls[index],
+                    "sha256": submission.artifact_hashes[index],
+                }
+            )
 
         def leader_fn() -> dict[str, typing.Any]:
-            return self._build_verdict_payload(manifest, submission, agreement)
+            return self._build_verdict_payload(
+                manifest, manifest_hash, supplemental_sources
+            )
 
         def validator_fn(leader_result: typing.Any) -> bool:
             leader = leader_result.calldata if hasattr(leader_result, "calldata") else leader_result
             try:
-                mine = self._build_verdict_payload(manifest, submission, agreement)
+                mine = self._build_verdict_payload(
+                    manifest, manifest_hash, supplemental_sources
+                )
             except Exception:
                 return False
             if not isinstance(leader, dict):
@@ -1474,12 +1614,86 @@ class Presense(gl.Contract):
         self.agreements[agreement_id] = agreement
         return verdict.id
 
-    @gl.public.view
-    def get_verdict(self, agreement_id: str) -> typing.Any:
+    @gl.public.write
+    def settle(self, agreement_id: str) -> None:
+        """Credit verdict payouts after the challenge window closes."""
         agreement = self._require_agreement(agreement_id)
+        if agreement.status != "EVALUATED":
+            _fail("E_INVALID_STATE", "agreement is not awaiting settlement")
+        if self._now() <= agreement.evaluated_at + agreement.challenge_window:
+            _fail("E_CHALLENGE_WINDOW_OPEN", "challenge window is still open")
         if not agreement.verdict_id:
             _fail("E_NO_VERDICT", "agreement has no verdict")
         verdict = self.verdicts.get(agreement.verdict_id)
+        if verdict is None or verdict.decision == "UNDETERMINED":
+            _fail("E_NO_VERDICT", "agreement has no settleable verdict")
+        if int(verdict.payout_buyer) + int(verdict.payout_seller) != int(agreement.escrow):
+            _fail("E_PAYOUT_INVALID", "verdict payouts do not equal escrow")
+
+        self._credit_claim(agreement.buyer, verdict.payout_buyer)
+        self._credit_claim(agreement.seller, verdict.payout_seller)
+        agreement.status = "SETTLED"
+        self.agreements[agreement_id] = agreement
+
+    @gl.public.write
+    def challenge(
+        self,
+        agreement_id: str,
+        reason: str,
+        evidence_urls: DynArray[str],
+        evidence_hashes: DynArray[str],
+    ) -> str:
+        """Submit counter-evidence during the single allowed challenge window."""
+        agreement = self._require_agreement(agreement_id)
+        challenger = _as_address(gl.message.sender_address)
+        if challenger != agreement.buyer and challenger != agreement.seller:
+            _fail("E_UNAUTHORIZED", "only the buyer or seller can challenge")
+        if int(agreement.challenge_count) > 0:
+            _fail("E_CHALLENGE_LIMIT", "agreement already has a challenge")
+        if agreement.status != "EVALUATED":
+            _fail("E_INVALID_STATE", "agreement has no verdict to challenge")
+        if self._now() > agreement.evaluated_at + agreement.challenge_window:
+            _fail("E_CHALLENGE_WINDOW_CLOSED", "challenge window has closed")
+        if not isinstance(reason, str) or not reason.strip() or len(reason) > MAX_REASON_CHARS:
+            _fail("E_REASON_INVALID", "challenge reason must be 1-1,000 characters")
+        if len(evidence_urls) < 1 or len(evidence_urls) > MAX_EVIDENCE_URLS:
+            _fail("E_ARTIFACT_COUNT", "challenge must contain 1-5 evidence URLs")
+        if len(evidence_urls) != len(evidence_hashes):
+            _fail("E_ARTIFACT_MISMATCH", "challenge URL and hash counts differ")
+
+        manifest = json.loads(agreement.manifest_json)
+        _, allowed_domains = _validate_evidence_policy(manifest["evidence_policy"])
+        for index in range(len(evidence_urls)):
+            _validate_url(evidence_urls[index], allowed_domains, f"evidence_urls[{index}]")
+            digest = evidence_hashes[index]
+            if digest != "" and re.match(r"^[0-9a-fA-F]{64}$", digest) is None:
+                _fail("E_BAD_HASH", f"evidence_hashes[{index}] must be empty or 64 hex characters")
+
+        challenge_id = f"{agreement_id}:challenge"
+        challenge = Challenge(
+            id=challenge_id,
+            agreement_id=agreement_id,
+            challenger=challenger,
+            reason=reason,
+            evidence_urls=evidence_urls,
+            evidence_hashes=evidence_hashes,
+            created_at=self._now(),
+        )
+        self.challenges[challenge_id] = challenge
+        agreement.challenge_id = challenge_id
+        agreement.challenge_count = u8(1)
+        agreement.status = "DISPUTED"
+        self.agreements[agreement_id] = agreement
+        return challenge_id
+
+    @gl.public.view
+    def get_verdict(self, verdict_id: str) -> typing.Any:
+        if verdict_id in self.agreements:
+            agreement = self.agreements[verdict_id]
+            if not agreement.verdict_id:
+                _fail("E_NO_VERDICT", "agreement has no verdict")
+            verdict_id = agreement.verdict_id
+        verdict = self.verdicts.get(verdict_id)
         if verdict is None:
             _fail("E_NO_VERDICT", "agreement has no verdict")
         return {
@@ -1491,10 +1705,63 @@ class Presense(gl.Contract):
             "payout_buyer": int(verdict.payout_buyer),
             "payout_seller": int(verdict.payout_seller),
             "summary": verdict.summary,
-            "results": json.loads(verdict.results),
+            "results": [
+                {
+                    "criterion_id": item.criterion_id,
+                    "kind": item.kind,
+                    "check": item.check,
+                    "passed": item.passed,
+                    "score": int(item.score),
+                    "weight": int(item.weight),
+                    "reason": item.reason,
+                    "evidence_url": item.evidence_url,
+                    "evidence_quote": item.evidence_quote,
+                }
+                for item in verdict.results
+            ],
             "evaluated_at": int(verdict.evaluated_at),
             "evaluator": str(verdict.evaluator),
             "challenge_deadline": int(verdict.challenge_deadline),
+        }
+
+    @gl.public.view
+    def get_challenge(self, challenge_id: str) -> typing.Any:
+        """Return a stored challenge and its counter-evidence references."""
+        challenge = self.challenges.get(challenge_id)
+        if challenge is None:
+            _fail("E_NOT_FOUND", "challenge does not exist")
+        return {
+            "id": challenge.id,
+            "agreement_id": challenge.agreement_id,
+            "challenger": str(challenge.challenger),
+            "reason": challenge.reason,
+            "evidence_urls": [challenge.evidence_urls[i] for i in range(len(challenge.evidence_urls))],
+            "evidence_hashes": [challenge.evidence_hashes[i] for i in range(len(challenge.evidence_hashes))],
+            "created_at": int(challenge.created_at),
+        }
+
+    @gl.public.view
+    def get_verdict_json(self, verdict_id: str) -> str:
+        """Return the latest verdict as compact, canonical JSON."""
+        payload = self.get_verdict(verdict_id)
+        payload["schema"] = "presense.verdict.v1"
+        return json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+    @gl.public.view
+    def preview_payout(self, agreement_id: str) -> typing.Any:
+        """Return the latest verdict's buyer and seller payout amounts."""
+        agreement = self._require_agreement(agreement_id)
+        if not agreement.verdict_id:
+            _fail("E_NO_VERDICT", "agreement has no verdict")
+        verdict = self.verdicts.get(agreement.verdict_id)
+        if verdict is None:
+            _fail("E_NO_VERDICT", "agreement has no verdict")
+        return {
+            "decision": verdict.decision,
+            "score": int(verdict.score),
+            "payout_buyer": int(verdict.payout_buyer),
+            "payout_seller": int(verdict.payout_seller),
+            "escrow": int(agreement.escrow),
         }
 
     @gl.public.view

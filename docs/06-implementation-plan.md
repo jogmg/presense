@@ -233,7 +233,7 @@ Deterministic evidence checks with a strict fetch policy.
 - [x] Write tests for pass, fail, missing, oversize, total cap, disallowed redirect, and redirect cap.
 - [x] Wire checks into `_run_objective(criterion, evidence_policy)` and `preview_objective_checks`.
 - [ ] Confirm the web backend does not transparently follow redirects, or update the runtime/API to expose a final URL or disable redirects.
-- [ ] Apply `missing_evidence` policy when the Phase 4/5 verdict builder consumes objective results.
+- [x] Apply `missing_evidence` policy when the Phase 4/5 verdict builder consumes objective results.
 
 ### Deliverable
 
@@ -306,25 +306,27 @@ Do not compare `reason` or `summary`. Do not let the leader set payout or timest
 
 ## 8. Phase 5 — Verdict, challenge, settlement
 
+**Status: complete.** Direct tests cover ACCEPT, PARTIAL floor rounding, REJECT refunds, challenge validation and re-evaluation with counter-evidence, challenge-window restart, permissionless settlement, withdrawal, and escrow conservation.
+
 ### Goal
 
 Close the economic loop.
 
 ### Tasks
 
-- [ ] Define `Verdict` and `CriterionResult`.
-- [ ] Materialize verdict from the accepted leader payload.
-- [ ] Compute score and payout.
-- [ ] Implement `challenge`.
-- [ ] Implement re-evaluation with counter-evidence.
-- [ ] Implement `settle`.
-- [ ] Implement `preview_payout`.
-- [ ] Implement `get_verdict`, `get_verdict_json`.
-- [ ] Write payout tests for ACCEPT/PARTIAL/REJECT.
-- [ ] Write challenge tests.
-- [ ] Write settlement-window tests.
-- [ ] Write withdraw tests for both kinds.
-- [ ] Write conservation tests.
+- [x] Define `Verdict`, `CriterionResult`, and `Challenge` storage records.
+- [x] Materialize verdict from the accepted leader payload.
+- [x] Compute score and payout with integer floor arithmetic.
+- [x] Implement `challenge`.
+- [x] Implement re-evaluation with bounded submission and challenge evidence.
+- [x] Implement `settle`.
+- [x] Implement `preview_payout`.
+- [x] Implement `get_verdict`, `get_verdict_json`, and `get_challenge`.
+- [x] Write payout tests for ACCEPT/PARTIAL/REJECT.
+- [x] Write challenge tests.
+- [x] Write settlement-window tests.
+- [x] Write withdraw tests for both kinds.
+- [x] Write conservation tests.
 
 ### Deliverable
 
@@ -332,16 +334,16 @@ A complete agreement lifecycle from creation to withdrawal.
 
 ### Definition of done
 
-- [ ] ACCEPT pays seller.
-- [ ] REJECT refunds buyer.
-- [ ] PARTIAL splits pro rata with floor.
-- [ ] `buyer + seller == escrow` on every path.
-- [ ] Challenge window is enforced.
-- [ ] One challenge limit is enforced.
-- [ ] Settlement is permissionless.
-- [ ] Double settlement reverts.
-- [ ] Double withdrawal reverts.
-- [ ] `total_locked` matches held funds.
+- [x] ACCEPT pays seller.
+- [x] REJECT refunds buyer.
+- [x] PARTIAL splits pro rata with floor.
+- [x] `buyer + seller == escrow` on every path.
+- [x] Challenge window is enforced and restarts after re-evaluation.
+- [x] One challenge limit is enforced.
+- [x] Settlement is permissionless.
+- [x] Double settlement reverts.
+- [x] Double withdrawal reverts.
+- [x] `total_locked` matches held funds through settlement and withdrawal.
 
 ---
 

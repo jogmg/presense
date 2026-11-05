@@ -4,7 +4,7 @@
 
 Presense is a reusable GenLayer Intelligent Contract primitive that adjudicates whether agent-delivered work satisfies an agreed **Acceptance Manifest** (the Acceptance Test Manifest), then settles escrow according to a structured verdict.
 
-> **Status:** Phases 0–2 are complete. Phase 3 adds deterministic objective checks and a non-mutating preview write. Verdict construction, validator comparison, and settlement remain later phases.
+> **Status:** Phases 0–5 are implemented. The contract supports manifest validation, objective and subjective evaluation, independent validator comparison, challenges, verdict payouts, settlement, and pull-payment withdrawal. Phase 6 hardening and live-network validation remain.
 
 ---
 
@@ -27,8 +27,8 @@ Expected:
 ✓ Lint passed (3 checks)
 ✓ Validation passed
   Contract: Presense
-  Methods: 15 (8 view, 7 write)
-118 passed
+  Methods: 22 (12 view, 10 write)
+131 passed
 ```
 
 For coverage:
@@ -37,7 +37,7 @@ For coverage:
 pytest tests/direct/ --cov=contracts --cov-report=term-missing
 ```
 
-Current result: 93% statement and branch coverage for `contracts/Presense.py`.
+Run the command above for the current statement and branch coverage report.
 
 `tests/conftest.py` carries two narrow shims for `genlayer-test 0.29.2`:
 a fallback for GenVM's renamed runner bundle, and a Windows-safe temp-file
@@ -139,13 +139,17 @@ presense/
 │   ├── 09-roadmap-and-grants.md
 │   └── 10-glossary-and-references.md
 ├── contracts/
-│   └── Presense.py    # manifest core and Phase 2 lifecycle
+│   └── Presense.py    # manifest, evaluation, challenge, and settlement
 ├── tests/
 │   ├── conftest.py    # toolchain compatibility shims
 │   ├── direct/
 │   │   ├── test_manifest.py
+│   │   ├── test_lifecycle.py
+│   │   ├── test_checks_objective.py
+│   │   ├── test_checks_subjective.py
+│   │   ├── test_settlement.py
 │   │   └── test_smoke.py
-│   └── integration/   # live-network tests (planned)
+│   └── integration/   # live-network tests
 ├── deploy/            # deployment scripts (planned)
 └── examples/          # manifests and payloads (planned)
 ```

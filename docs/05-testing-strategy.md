@@ -417,6 +417,8 @@ This is the test that distinguishes Presense from a thin LLM wrapper.
 
 ## 10. Settlement and accounting tests
 
+Direct coverage is implemented in `tests/direct/test_settlement.py` and `tests/direct/test_lifecycle.py`.
+
 | Test                           | Setup                    | Expected                          |
 | ------------------------------ | ------------------------ | --------------------------------- |
 | `test_accept_pays_seller`      | Verdict ACCEPT           | Seller claim = escrow, buyer = 0. |
@@ -459,6 +461,8 @@ Also test:
 ---
 
 ## 11. Challenge tests
+
+Direct challenge validation, counter-evidence re-evaluation, and challenge-window restart coverage is implemented in `tests/direct/test_settlement.py`.
 
 | Test                                                      | Setup                 | Expected                         |
 | --------------------------------------------------------- | --------------------- | -------------------------------- |

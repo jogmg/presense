@@ -4,7 +4,7 @@
 **Version:** 0.1
 **Contract:** `contracts/Presense.py`
 **Runtime:** `py-genlayer` (magic comment below)
-**Status:** Phases 1–4 implemented (manifest core, lifecycle/escrow, objective checks, subjective evaluation, and leader/validator consensus).
+**Status:** Phases 1–5 implemented (manifest core, lifecycle/escrow, objective checks, subjective evaluation, leader/validator consensus, challenge, payout, and settlement).
 
 ---
 
@@ -331,7 +331,7 @@ def evaluate(self, agreement_id: str) -> str:
 **Execution:**
 
 1. Parse and validate the stored canonical manifest.
-2. Build the evidence list from the submission plus challenge counter-evidence.
+2. Build the evidence list from the submission plus challenge counter-evidence. Subjective criteria receive the manifest source plus bounded supplemental submission/challenge sources; declared hashes are checked. Objective criteria continue to run against their manifest-defined URL.
 3. For each criterion, run the check.
 4. Build a proposed verdict.
 5. Run the leader/validator equivalence block.
@@ -507,6 +507,8 @@ Presense does not define a `__receive__` handler. GenVM's default dispatcher rej
 | `preview_payout(id: str)`            | Agreement ID  | `typing.Any` | Buyer/seller payout from the latest verdict.                                    |
 
 Use `get_agreement(id).verdict_id` to find the verdict ID, `get_agreement(id).submission_id` for the submission ID, and `get_agreement(id).challenge_id` for the challenge ID. View methods must not mutate state and must not call `gl.nondet`.
+
+`get_verdict` and `get_verdict_json` accept the verdict ID; they also accept an agreement ID for backwards-compatible convenience.
 
 `check_manifest` runs the exact parser and validator used by `create_agreement` and returns:
 
@@ -871,6 +873,7 @@ If the quote is not found, the result is a failure, even if the score is high.
 | `E_CHALLENGE_LIMIT`         | Agreement already has a challenge.                                                                                      |
 | `E_NO_SUBMISSION`           | Evaluation requires a submission.                                                                                       |
 | `E_NO_VERDICT`              | Settlement requires a verdict.                                                                                          |
+| `E_PAYOUT_INVALID`          | Stored buyer and seller payouts do not sum to the agreement escrow.                                                     |
 | `E_CHALLENGE_WINDOW_OPEN`   | Settlement attempted before the window closes.                                                                          |
 | `E_ALREADY_SUBMITTED`       | Expiry attempted after submission.                                                                                      |
 | `E_EVIDENCE_MISSING`        | Required evidence could not be fetched.                                                                                 |
