@@ -227,7 +227,7 @@ def make_manifest(**overrides):
 
 ### 5.1 Manifest parsing
 
-**Status: implemented** in `tests/direct/test_manifest.py`. The full direct suite currently contains 145 tests; manifest parsing cases remain part of that suite.
+**Status: implemented** in `tests/direct/test_manifest.py`. The full direct suite currently contains 151 tests; manifest parsing cases remain part of that suite.
 
 | Test                                      | Input               | Expected                          |
 | ----------------------------------------- | ------------------- | --------------------------------- |
@@ -514,7 +514,19 @@ Focused security invariants and payout boundary cases live in `tests/direct/test
 
 ### 13.1 Localnet
 
-Run with `gltest` against a local GenVM:
+**Status:** `tests/integration/test_localnet_lifecycle.py` implements the full
+lifecycle and expiry scenarios against `glsim`; both pass. Challenge, cancel,
+invalid-manifest, and unauthorized paths are covered in direct mode. A full
+GenVM localnet run remains part of Phase 7.
+
+Run with `gltest` against a local GenVM or `glsim`:
+
+```bash
+python scripts/run_glsim.py --no-browser
+gltest tests/integration -v -s --network localnet
+```
+
+Planned scenarios for a full localnet:
 
 - Full lifecycle: create → accept → submit → evaluate → settle → withdraw.
 - Challenge: create → submit → evaluate → challenge → evaluate → settle.
@@ -621,17 +633,24 @@ Coverage is a proxy, not a goal. The critical requirement is that the adversaria
 
 ## 17. Definition of done for testing
 
-- [ ] All direct-mode tests pass.
-- [ ] All adversarial tests pass.
-- [ ] The schema-valid lie test fails the validator.
-- [ ] The prompt-injection test fails the validator.
-- [ ] Payout conservation holds for all decisions and edge escrows.
-- [ ] Every state transition has a negative test.
-- [ ] Every error code has at least one test.
-- [ ] Integration tests pass on Localnet.
+- [x] All direct-mode tests pass.
+- [x] All adversarial tests pass.
+- [x] The schema-valid lie test fails the validator.
+- [x] The prompt-injection test fails the validator.
+- [x] Payout conservation holds for all decisions and edge escrows.
+- [x] Every state transition has a negative test.
+- [x] Every externally reachable error code has at least one test.
+- [x] Integration tests pass on Localnet (`glsim`; full GenVM localnet pending).
 - [ ] At least five scenarios pass on Bradbury.
 - [ ] Test evidence is saved for the portal submission.
 - [ ] CI is green.
+
+Three failure branches are defensive state invariants and are intentionally not
+reachable through the public API: `E_CHECK_UNSUPPORTED` (manifest validation
+admits only the five supported checks), `E_NO_SUBMISSION` in `evaluate`
+(`SUBMITTED` or `DISPUTED` implies a submission ID), and `E_ALREADY_SUBMITTED`
+in `claim_expired` (`ACTIVE` implies no submission). They remain as fail-closed
+guards if a future change breaks those invariants.
 
 ---
 

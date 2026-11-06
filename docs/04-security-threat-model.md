@@ -400,62 +400,62 @@ These must hold after every state transition:
 
 ### Manifest and inputs
 
-- [ ] Reject duplicate JSON keys.
-- [ ] Reject `NaN`, `Infinity`, and trailing content.
-- [ ] Canonicalize before hashing.
-- [ ] Cap manifest size before parsing.
-- [ ] Cap criteria count.
-- [ ] Validate all URLs against the evidence policy.
-- [ ] Reject private/loopback hosts.
-- [ ] Validate hashes as 64 hex chars or empty.
+- [x] Reject duplicate JSON keys.
+- [x] Reject `NaN`, `Infinity`, and trailing content.
+- [x] Canonicalize before hashing.
+- [x] Cap manifest size before parsing.
+- [x] Cap criteria count.
+- [x] Validate all URLs against the evidence policy.
+- [x] Reject private/loopback hosts.
+- [x] Validate hashes as 64 hex chars or empty.
 
 ### State and auth
 
-- [ ] Check agreement existence before field access.
-- [ ] Check state before every transition.
-- [ ] Check caller role for seller-only and party-only methods.
-- [ ] Use `gl.message.sender_address`, not a user-supplied caller.
-- [ ] Prevent self-agreement.
-- [ ] Prevent duplicate agreement IDs.
+- [x] Check agreement existence before field access.
+- [x] Check state before every transition.
+- [x] Check caller role for seller-only and party-only methods.
+- [x] Use `gl.message.sender_address`, not a user-supplied caller.
+- [x] Prevent self-agreement.
+- [x] Prevent duplicate agreement IDs.
 
 ### Value
 
-- [ ] Require `gl.message.value > 0` on create.
-- [ ] Store escrow from `gl.message.value`.
-- [ ] Never use `self.balance` as the escrow source of truth.
-- [ ] Compute payout with floor and remainder.
-- [ ] Update claims before emit.
-- [ ] Reject zero claims.
-- [ ] Keep a receive handler absent so GenVM rejects value-only transfers; fund only through `create_agreement`.
+- [x] Require `gl.message.value > 0` on create.
+- [x] Store escrow from `gl.message.value`.
+- [x] Never use `self.balance` as the escrow source of truth.
+- [x] Compute payout with floor and remainder.
+- [x] Update claims before emit.
+- [x] Reject zero claims.
+- [x] Keep a receive handler absent so GenVM rejects value-only transfers; fund only through `create_agreement`.
 
 ### Consensus
 
-- [ ] Do not use `strict_eq` for raw LLM output.
-- [ ] Re-fetch evidence in the validator.
-- [ ] Compare objective booleans exactly.
-- [ ] Compare subjective pass exactly.
-- [ ] Bound score tolerance.
-- [ ] Verify evidence quotes.
-- [ ] Check decision consistency.
-- [ ] Never let the leader set payout or timestamps.
+- [x] Do not use `strict_eq` for raw LLM output.
+- [x] Re-fetch evidence in the validator.
+- [x] Compare objective booleans exactly.
+- [x] Compare subjective pass exactly.
+- [x] Bound score tolerance.
+- [x] Verify evidence quotes.
+- [x] Check decision consistency.
+- [x] Never let the leader set payout or timestamps.
 
 ### Evidence
 
-- [ ] Enforce per-source byte cap.
-- [ ] Enforce total byte cap.
-- [ ] Enforce per-criterion source cap.
-- [ ] Enforce redirect cap and final-domain check.
-- [ ] Normalize text consistently.
-- [ ] Decode UTF-8 with replacement.
+- [x] Enforce per-source byte cap.
+- [x] Enforce total byte cap.
+- [x] Enforce per-criterion source cap.
+- [x] Enforce redirect cap and final-domain check for visible 3xx responses. (Transparent redirects performed by the web backend remain a documented limitation; see `docs/06-implementation-plan.md` §6.)
+- [x] Normalize text consistently.
+- [x] Decode UTF-8 with replacement.
 
 ### Operations
 
-- [ ] No admin key.
-- [ ] No pause.
-- [ ] No upgrade proxy.
-- [ ] No `selfdestruct` equivalent.
-- [ ] No arbitrary call.
-- [ ] No unbounded loop over user-controlled arrays without caps.
+- [x] No admin key.
+- [x] No pause.
+- [x] No upgrade proxy.
+- [x] No `selfdestruct` equivalent.
+- [x] No arbitrary call.
+- [x] No unbounded loop over user-controlled arrays without caps.
 
 ---
 

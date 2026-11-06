@@ -1,0 +1,104 @@
+{
+  "schema": "presense.manifest.v1",
+  "version": 1,
+  "title": "Weather API delivery",
+  "description": "Acceptance criteria for a delivered weather API and its documentation.",
+  "artifact": {
+    "type": "http_api",
+    "primary_url": "https://api.example.com",
+    "docs_url": "https://docs.example.com",
+    "notes": "Production endpoint and public documentation."
+  },
+  "criteria": [
+    {
+      "id": "C1",
+      "title": "Health endpoint returns 200",
+      "kind": "objective",
+      "check": "http_status",
+      "weight": 25,
+      "mandatory": true,
+      "params": {
+        "url": "https://api.example.com/health",
+        "expected_status": 200,
+        "method": "GET"
+      }
+    },
+    {
+      "id": "C2",
+      "title": "OpenAPI document exposes required keys",
+      "kind": "objective",
+      "check": "json_has_keys",
+      "weight": 20,
+      "mandatory": true,
+      "params": {
+        "url": "https://api.example.com/openapi.json",
+        "required_keys": ["openapi", "info.title", "paths"],
+        "types": {
+          "openapi": "string",
+          "paths": "object"
+        }
+      }
+    },
+    {
+      "id": "C3",
+      "title": "OpenAPI document is pinned",
+      "kind": "objective",
+      "check": "file_hash",
+      "weight": 10,
+      "mandatory": false,
+      "params": {
+        "url": "https://api.example.com/openapi.json",
+        "sha256": "9f2c000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    {
+      "id": "C4",
+      "title": "Documentation covers auth and errors",
+      "kind": "objective",
+      "check": "text_contains",
+      "weight": 15,
+      "mandatory": true,
+      "params": {
+        "url": "https://docs.example.com",
+        "phrases": ["authentication", "rate limit", "error codes"],
+        "case_sensitive": false
+      }
+    },
+    {
+      "id": "C5",
+      "title": "Documentation quality",
+      "kind": "subjective",
+      "check": "llm_rubric",
+      "weight": 30,
+      "mandatory": true,
+      "params": {
+        "evidence_url": "https://docs.example.com",
+        "rubric": "The documentation must explain authentication, rate limits, error codes, and include one end-to-end example. It must not invent endpoints that are absent from the evidence.",
+        "threshold": 7,
+        "max_chars": 20000
+      }
+    }
+  ],
+  "decision_policy": {
+    "accept_threshold": 80,
+    "partial_threshold": 50,
+    "mandatory_must_pass": true,
+    "missing_evidence": "UNDETERMINED",
+    "partial_payout": "pro_rata",
+    "score_rounding": "floor"
+  },
+  "evidence_policy": {
+    "allowed_domains": ["api.example.com", "docs.example.com"],
+    "require_https": true,
+    "max_bytes_per_source": 2000000,
+    "max_total_bytes": 10000000,
+    "max_sources_per_criterion": 5,
+    "allow_redirects": true,
+    "max_redirects": 3
+  },
+  "metadata": {
+    "buyer": "example-buyer",
+    "seller": "example-agent",
+    "created_for": "GenLayer builder demo"
+  }
+}

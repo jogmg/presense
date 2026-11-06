@@ -236,14 +236,14 @@ Use Studionet for quick hosted checks before Bradbury. State is temporary.
 
 ### 5.1 Pre-deploy checklist
 
-- [ ] `genvm-lint check` passes.
-- [ ] Direct tests pass.
-- [ ] Localnet integration tests pass.
+- [x] `genvm-lint check` passes.
+- [x] Direct tests pass.
+- [x] Localnet integration tests pass against `glsim` (full GenVM localnet pending).
 - [ ] Bradbury account is funded.
 - [ ] `genlayer network info` shows the expected chain.
-- [ ] The contract has no constructor arguments.
-- [ ] The magic comment is exact.
-- [ ] No private keys or secrets are in the repo.
+- [x] The contract has no constructor arguments.
+- [x] The magic comment is exact.
+- [x] No private keys or secrets are in the repo.
 
 ### 5.2 Deploy
 
@@ -585,22 +585,22 @@ For a stuck agreement:
 
 ## 11. Pre-submission security checklist
 
-- [ ] Lint clean.
-- [ ] Direct tests pass.
-- [ ] Localnet integration passes.
+- [x] Lint clean.
+- [x] Direct tests pass.
+- [x] Localnet integration passes against `glsim` (full GenVM localnet pending).
 - [ ] Bradbury smoke test passes.
-- [ ] No admin keys.
-- [ ] No upgrade proxy.
-- [ ] No `dict`/`list` storage.
-- [ ] No unbounded loops.
-- [ ] Manifest size cap enforced.
-- [ ] URL policy enforced.
-- [ ] Evidence quote verified.
-- [ ] Payout conservation tested.
-- [ ] Double withdrawal tested.
-- [ ] Challenge window tested.
-- [ ] Withdraw tested for both `evm` and `ic`.
-- [ ] README links the docs.
+- [x] No admin keys.
+- [x] No upgrade proxy.
+- [x] No `dict`/`list` storage.
+- [x] No unbounded loops.
+- [x] Manifest size cap enforced.
+- [x] URL policy enforced.
+- [x] Evidence quote verified.
+- [x] Payout conservation tested.
+- [x] Double withdrawal tested.
+- [x] Challenge window tested.
+- [x] Withdraw tested for both `evm` and `ic`.
+- [x] README links the docs.
 - [ ] Portal evidence saved.
 
 ---

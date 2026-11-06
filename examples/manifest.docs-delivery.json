@@ -1,0 +1,84 @@
+{
+  "schema": "presense.manifest.v1",
+  "version": 1,
+  "title": "Technical documentation delivery",
+  "description": "Acceptance criteria for an agent-delivered documentation update.",
+  "artifact": {
+    "type": "documentation",
+    "primary_url": "https://docs.example.com/guide",
+    "notes": "Published guide and its downloadable source archive."
+  },
+  "criteria": [
+    {
+      "id": "C1",
+      "title": "Guide is reachable",
+      "kind": "objective",
+      "check": "http_status",
+      "weight": 25,
+      "mandatory": true,
+      "params": {
+        "url": "https://docs.example.com/guide",
+        "expected_status": [200, 203]
+      }
+    },
+    {
+      "id": "C2",
+      "title": "Guide covers required topics",
+      "kind": "objective",
+      "check": "text_contains",
+      "weight": 25,
+      "mandatory": true,
+      "params": {
+        "url": "https://docs.example.com/guide",
+        "phrases": ["authentication", "rate limits", "error codes"],
+        "case_sensitive": false
+      }
+    },
+    {
+      "id": "C3",
+      "title": "Source archive matches the agreed digest",
+      "kind": "objective",
+      "check": "file_hash",
+      "weight": 10,
+      "mandatory": false,
+      "params": {
+        "url": "https://docs.example.com/guide.tar.gz",
+        "sha256": "4d1f000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    {
+      "id": "C4",
+      "title": "Guide is clear and complete",
+      "kind": "subjective",
+      "check": "llm_rubric",
+      "weight": 40,
+      "mandatory": true,
+      "params": {
+        "evidence_url": "https://docs.example.com/guide",
+        "rubric": "The guide must explain authentication, rate limits, and error codes, and include at least one runnable end-to-end example. It must not describe endpoints or behaviour absent from the evidence.",
+        "threshold": 7,
+        "max_chars": 20000
+      }
+    }
+  ],
+  "decision_policy": {
+    "accept_threshold": 85,
+    "partial_threshold": 55,
+    "mandatory_must_pass": true,
+    "missing_evidence": "REJECT",
+    "partial_payout": "pro_rata",
+    "score_rounding": "floor"
+  },
+  "evidence_policy": {
+    "allowed_domains": ["docs.example.com"],
+    "require_https": true,
+    "max_bytes_per_source": 1000000,
+    "max_total_bytes": 5000000,
+    "max_sources_per_criterion": 3,
+    "allow_redirects": true,
+    "max_redirects": 2
+  },
+  "metadata": {
+    "created_for": "documentation-delivery-example"
+  }
+}

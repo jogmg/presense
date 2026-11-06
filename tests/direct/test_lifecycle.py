@@ -331,6 +331,34 @@ def test_expiry_requires_active_agreement_and_elapsed_deadline(setup_contract):
     assert_error(lambda: contract.claim_expired("agreement_1"), "E_DEADLINE_NOT_PASSED")
 
 
+def test_seller_cannot_accept_after_deadline(setup_contract):
+    contract, vm, buyer, seller = setup_contract
+    now = transaction_now(vm)
+    create_agreement(contract, vm, buyer, seller, deadline=now + 7_200)
+
+    set_transaction_time(vm, now + 7_201)
+    vm.sender = seller
+    assert_error(lambda: contract.accept_agreement("agreement_1"), "E_DEADLINE_PASSED")
+    assert contract.get_status("agreement_1") == "CREATED"
+
+
+def test_seller_cannot_submit_after_deadline(setup_contract):
+    contract, vm, buyer, seller = setup_contract
+    now = transaction_now(vm)
+    create_agreement(contract, vm, buyer, seller, deadline=now + 7_200)
+    vm.sender = seller
+    contract.accept_agreement("agreement_1")
+
+    set_transaction_time(vm, now + 7_201)
+    assert_error(
+        lambda: contract.submit_delivery(
+            "agreement_1", ["https://api.example.com/a"], [""], ""
+        ),
+        "E_DEADLINE_PASSED",
+    )
+    assert contract.get_status("agreement_1") == "ACTIVE"
+
+
 def test_withdraw_validates_kind_and_zero_claim(setup_contract):
     contract, vm, buyer, seller = setup_contract
     vm.sender = buyer

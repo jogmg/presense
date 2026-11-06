@@ -4,7 +4,7 @@
 
 Presense is a reusable GenLayer Intelligent Contract primitive that adjudicates whether agent-delivered work satisfies an agreed **Acceptance Manifest** (the Acceptance Test Manifest), then settles escrow according to a structured verdict.
 
-> **Status:** Phases 0–6 are implemented. The contract supports manifest validation, objective and subjective evaluation, independent validator comparison, challenges, verdict payouts, settlement, and pull-payment withdrawal. External peer review and Phase 7 live-network validation remain.
+> **Status:** Phases 0–6 are implemented. The contract supports manifest validation, objective and subjective evaluation, independent validator comparison, challenges, verdict payouts, settlement, and pull-payment withdrawal. The direct suite, example manifests, and a local lifecycle suite (against `glsim`) pass. External peer review and Phase 7 live-network validation remain.
 
 ---
 
@@ -28,8 +28,8 @@ Expected:
 ✓ Validation passed
   Contract: Presense
   Methods: 22 (12 view, 10 write)
-  145 passed
-  contracts/Presense.py 86% coverage (branches included)
+  151 passed
+  contracts/Presense.py 87% coverage (branches included)
 ```
 
 For coverage:
@@ -40,9 +40,24 @@ pytest tests/direct/ --cov=contracts --cov-report=term-missing
 
 Run the command above for the current statement and branch coverage report.
 
+The integration suite runs the full lifecycle and an expiry refund against a
+local simulator:
+
+```bash
+python scripts/run_glsim.py --no-browser   # terminal 1
+gltest tests/integration -v -s --network localnet   # terminal 2
+```
+
+A plain `pytest` run skips the integration tests, so it never needs a live
+network.
+
 `tests/conftest.py` carries two narrow shims for `genlayer-test 0.29.2`:
 a fallback for GenVM's renamed runner bundle, and a Windows-safe temp-file
-cleanup. They can be removed when the upstream toolchain handles both cases.
+cleanup. `scripts/run_glsim.py` adds two simulator shims: it caches the real
+contract class instead of `gltest`'s calldata proxy, and it applies a write
+transaction's native value to the simulated VM (0.29.2 drops it, which makes
+payable methods see `gl.message.value == 0`). They can be removed when the
+upstream toolchain handles these cases.
 
 ---
 
@@ -141,6 +156,12 @@ presense/
 │   └── 10-glossary-and-references.md
 ├── contracts/
 │   └── Presense.py    # manifest, evaluation, challenge, and settlement
+├── examples/
+│   ├── manifest.weather-api.json
+│   ├── manifest.docs-delivery.json
+│   └── manifest.bad-example.json
+├── scripts/
+│   └── run_glsim.py   # local simulator launcher with toolchain shims
 ├── tests/
 │   ├── conftest.py    # toolchain compatibility shims
 │   ├── direct/
@@ -151,10 +172,10 @@ presense/
 │   │   ├── test_validator.py
 │   │   ├── test_settlement.py
 │   │   ├── test_security.py
+│   │   ├── test_examples.py
 │   │   └── test_smoke.py
-│   └── integration/   # live-network tests
+│   └── integration/   # glsim/localnet lifecycle tests
 ├── deploy/            # deployment scripts (planned)
-└── examples/          # manifests and payloads (planned)
 ```
 
 ---
@@ -232,16 +253,18 @@ genvm-lint check contracts/Presense.py
 # 3. Fast tests (runs today)
 pytest tests/direct/ -v
 
-# 4. Local integration (requires a running GenLayer node)
-gltest tests/integration/ -v -s --network localnet
+# 4. Local integration against the glsim simulator
+python scripts/run_glsim.py --no-browser            # terminal 1
+gltest tests/integration/ -v -s --network localnet  # terminal 2
 
 # 5. Deploy to Bradbury (once the interface stabilizes)
 genlayer network set testnet-bradbury
 genlayer deploy --contract contracts/Presense.py
 ```
 
-> Steps 2 and 3 are runnable without a network. Step 4 requires a running local
-> GenLayer node; see the [integration test notes](tests/integration/README.md).
+> Steps 2 and 3 are runnable without a network. Step 4 uses the bundled `glsim`
+> simulator; a full GenVM localnet (`genlayer up`) or Bradbury node can be used
+> instead. See the [integration test notes](tests/integration/README.md).
 > Step 5 requires a configured deployment network and a stabilized interface.
 >
 > On Windows, prefix `genvm-lint` with `$env:PYTHONIOENCODING="utf-8"` if the

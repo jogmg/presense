@@ -243,7 +243,7 @@ Four objective checks that return structured results and never crash the evaluat
 
 - [x] All implemented §7 objective tests pass.
 - [x] Fetch caps are enforced before parsing.
-- [ ] Missing evidence follows the policy in the verdict builder.
+- [x] Missing evidence follows the policy in the verdict builder (`test_evaluate_fails_closed_when_evidence_is_missing`).
 - [x] No LLM is used for objective checks.
 - [x] Each result includes `criterion_id`, `passed`, `score`, `reason`, `evidence_url`.
 
@@ -358,7 +358,7 @@ Make the contract defensible before deployment.
 ### Tasks
 
 - [x] Run `genvm-lint check`.
-- [x] Run the full direct suite with coverage (145 tests; 86% branch coverage).
+- [x] Run the full direct suite with coverage (151 tests; 87% branch coverage).
 - [x] Run adversarial tests.
 - [x] Run exhaustive payout conservation tests.
 - [x] Review every error code.
@@ -399,7 +399,7 @@ Prove the contract on Bradbury and submit it to the builder portal.
 
 ### Tasks
 
-- [ ] Deploy to Localnet and run integration tests.
+- [x] Run the lifecycle and expiry integration suites against `glsim` (`gltest tests/integration -v -s --network localnet`); a full GenVM localnet run remains pending.
 - [ ] Deploy to Bradbury.
 - [ ] Verify the explorer shows the contract.
 - [ ] Run the smoke test:
@@ -598,10 +598,10 @@ Do **not** cut:
 
 Presense v1 is done when:
 
-- [ ] The contract is implemented and lint-clean.
-- [ ] The direct suite passes with coverage ≥ 85%.
-- [ ] The schema-valid lie test fails the validator.
-- [ ] The prompt-injection test fails the validator.
+- [x] The contract is implemented and lint-clean.
+- [x] The direct suite passes with coverage ≥ 85%.
+- [x] The schema-valid lie test fails the validator.
+- [x] The prompt-injection test fails the validator.
 - [ ] The full lifecycle passes on Localnet.
 - [ ] At least five scenarios pass on Bradbury.
 - [ ] The repo is public with this documentation.

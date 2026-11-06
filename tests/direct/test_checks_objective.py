@@ -200,6 +200,30 @@ def test_check_failure_is_distinct_from_missing_evidence(setup_contract):
     assert results[1]["passed"] is False
 
 
+def test_evaluate_fails_closed_when_evidence_is_missing(setup_contract):
+    contract, vm, buyer, seller = setup_contract
+    criteria = [
+        objective(
+            "C1",
+            "http_status",
+            {"url": "https://api.example.com/unavailable", "expected_status": 200},
+            100,
+        )
+    ]
+    agreement_id = create_submitted_agreement(
+        contract, vm, buyer, seller, manifest_json(criteria)
+    )
+
+    with pytest.raises(Exception) as exc:
+        contract.evaluate(agreement_id)
+
+    assert "E_UNDETERMINED" in str(exc.value)
+    assert contract.get_status(agreement_id) == "SUBMITTED"
+    with pytest.raises(Exception) as no_verdict:
+        contract.get_verdict(agreement_id)
+    assert "E_NO_VERDICT" in str(no_verdict.value)
+
+
 def test_content_length_cap_is_checked_before_parsing(setup_contract):
     contract, vm, buyer, seller = setup_contract
     criteria = [

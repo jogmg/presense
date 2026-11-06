@@ -656,24 +656,24 @@ Design guidance:
 
 Before writing the contract, confirm:
 
-- [ ] Every criterion has a unique ID.
-- [ ] Every objective check has a deterministic pass condition.
-- [ ] Every subjective check has a threshold and a quote requirement.
-- [ ] The manifest hash is verified in the validator.
-- [ ] The validator re-fetches evidence; it does not trust the leader.
-- [ ] Objective `passed` is compared exactly.
-- [ ] Subjective `pass` is compared exactly.
-- [ ] Subjective score tolerance is ≤ 1.
-- [ ] Overall score tolerance is ≤ 3.
-- [ ] Decision consistency is checked against results.
-- [ ] Evidence quotes are verified in code.
-- [ ] Missing evidence follows the policy and can produce `UNDETERMINED`.
-- [ ] Payout is computed deterministically after consensus.
-- [ ] Timestamps are set after consensus, not by the leader.
-- [ ] `strict_eq` is not used for raw LLM output.
-- [ ] Schema-only validation is not used as the validator.
-- [ ] Adversarial tests cover a schema-valid lie.
-- [ ] Prompt-injection tests cover instruction text in evidence.
+- [x] Every criterion has a unique ID.
+- [x] Every objective check has a deterministic pass condition.
+- [x] Every subjective check has a threshold and a quote requirement.
+- [x] The manifest hash is verified in the validator.
+- [x] The validator re-fetches evidence; it does not trust the leader.
+- [x] Objective `passed` is compared exactly.
+- [x] Subjective `pass` is compared exactly.
+- [x] Subjective score tolerance is ≤ 1.
+- [x] Overall score tolerance is ≤ 3.
+- [x] Decision consistency is checked against results.
+- [x] Evidence quotes are verified in code.
+- [x] Missing evidence follows the policy and can produce `UNDETERMINED`.
+- [x] Payout is computed deterministically after consensus.
+- [x] Timestamps are set after consensus, not by the leader.
+- [x] `strict_eq` is not used for raw LLM output.
+- [x] Schema-only validation is not used as the validator.
+- [x] Adversarial tests cover a schema-valid lie.
+- [x] Prompt-injection tests cover instruction text in evidence.
 
 ---
 

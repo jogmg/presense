@@ -1,0 +1,50 @@
+{
+  "schema": "presense.manifest.v1",
+  "version": 1,
+  "title": "Invalid manifest example",
+  "description": "This manifest is intentionally invalid: criterion weights sum to 90, not 100. check_manifest rejects it with E_MANIFEST_INVALID.",
+  "criteria": [
+    {
+      "id": "C1",
+      "title": "Health endpoint returns 200",
+      "kind": "objective",
+      "check": "http_status",
+      "weight": 60,
+      "mandatory": true,
+      "params": {
+        "url": "https://api.example.com/health",
+        "expected_status": 200
+      }
+    },
+    {
+      "id": "C2",
+      "title": "Documentation quality",
+      "kind": "subjective",
+      "check": "llm_rubric",
+      "weight": 30,
+      "mandatory": true,
+      "params": {
+        "evidence_url": "https://docs.example.com",
+        "rubric": "The documentation must explain authentication, rate limits, and error codes with a complete example.",
+        "threshold": 7
+      }
+    }
+  ],
+  "decision_policy": {
+    "accept_threshold": 80,
+    "partial_threshold": 50,
+    "mandatory_must_pass": true,
+    "missing_evidence": "UNDETERMINED",
+    "partial_payout": "pro_rata",
+    "score_rounding": "floor"
+  },
+  "evidence_policy": {
+    "allowed_domains": ["api.example.com", "docs.example.com"],
+    "require_https": true,
+    "max_bytes_per_source": 2000000,
+    "max_total_bytes": 10000000,
+    "max_sources_per_criterion": 5,
+    "allow_redirects": true,
+    "max_redirects": 3
+  }
+}
