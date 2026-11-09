@@ -4,7 +4,11 @@
 
 Presense is a reusable GenLayer Intelligent Contract primitive that adjudicates whether agent-delivered work satisfies an agreed **Acceptance Manifest** (the Acceptance Test Manifest), then settles escrow according to a structured verdict.
 
-> **Status:** Phases 0–6 are implemented. The contract supports manifest validation, objective and subjective evaluation, independent validator comparison, challenges, verdict payouts, settlement, and pull-payment withdrawal. The direct suite, example manifests, and a local lifecycle suite (against `glsim`) pass. External peer review and Phase 7 live-network validation remain.
+## Deployment
+
+| Network   | Chain ID | Contract                                                                                                            |
+| --------- | -------: | ------------------------------------------------------------------------------------------------------------------- |
+| Studionet |  `61999` | [GenLayer Studio Explorer](https://explorer-studio.genlayer.com/address/0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9) |
 
 ---
 
@@ -163,19 +167,18 @@ presense/
 ├── scripts/
 │   └── run_glsim.py   # local simulator launcher with toolchain shims
 ├── tests/
-│   ├── conftest.py    # toolchain compatibility shims
-│   ├── direct/
-│   │   ├── test_manifest.py
-│   │   ├── test_lifecycle.py
-│   │   ├── test_checks_objective.py
-│   │   ├── test_checks_subjective.py
-│   │   ├── test_validator.py
-│   │   ├── test_settlement.py
-│   │   ├── test_security.py
-│   │   ├── test_examples.py
-│   │   └── test_smoke.py
-│   └── integration/   # glsim/localnet lifecycle tests
-├── deploy/            # deployment scripts (planned)
+    ├── conftest.py    # toolchain compatibility shims
+    ├── direct/
+    │   ├── test_manifest.py
+    │   ├── test_lifecycle.py
+    │   ├── test_checks_objective.py
+    │   ├── test_checks_subjective.py
+    │   ├── test_validator.py
+    │   ├── test_settlement.py
+    │   ├── test_security.py
+    │   ├── test_examples.py
+    │   └── test_smoke.py
+    └── integration/   # glsim/localnet lifecycle tests
 ```
 
 ---
