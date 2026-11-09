@@ -218,7 +218,7 @@ As any caller, if the seller did not submit by the deadline, I expire the agreem
 |---|---|
 | Direct-mode tests | ≥ 30 |
 | Adversarial tests | ≥ 10 |
-| Integration tests on Bradbury | ≥ 5 |
+| Integration tests on Studionet | ≥ 5 |
 | Lint errors | 0 |
 | Portal submission | Accepted in Intelligent Contracts category |
 | Reuse | At least one external builder imports the manifest schema |
@@ -288,7 +288,7 @@ The name is intentionally close to “presence” — the contract is present at
 
 Presense v1 is successful when:
 
-1. A buyer and seller can complete the full lifecycle on Bradbury.
+1. A buyer and seller can complete the full lifecycle on Studionet (the current deployment). Bradbury validation is deferred.
 2. The contract produces a structured verdict with per-criterion evidence.
 3. A malicious leader cannot force a false verdict in tests.
 4. The manifest schema is documented well enough for another builder to generate one.

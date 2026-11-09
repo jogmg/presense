@@ -1054,7 +1054,7 @@ This guarantees `manifest_hash == sha256(manifest_json)` forever.
 ### 13.1 Deploy (CLI)
 
 ```bash
-genlayer network set testnet-bradbury
+genlayer network set studionet
 genlayer deploy --contract contracts/Presense.py
 ```
 

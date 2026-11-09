@@ -22,7 +22,7 @@ A GenLayer protocol mechanism that escalates a transaction to a larger validator
 
 ### Bradbury
 
-GenLayer’s production-like public testnet. Chain ID `4221`. Used for persistent, real-AI workloads.
+GenLayer’s production-like public testnet. Chain ID `4221`. Used for persistent, real-AI workloads. Presense’s Bradbury deployment is deferred; Studionet is the current target.
 
 ### Challenge
 
@@ -132,6 +132,10 @@ The state transition that converts escrow into claims according to the verdict.
 
 A GenLayer equivalence helper that requires exact equality. It is unsuitable for raw LLM output and is not used for Presense’s subjective checks.
 
+### Studionet
+
+GenLayer’s hosted stable development network. Chain ID `61999`. Presense’s current deployment is on Studionet at `0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9`; its state is temporary.
+
 ### Submission
 
 The seller’s delivery record: artifact URLs, optional hashes, notes, timestamp, and submitter.
@@ -232,6 +236,7 @@ The method that sends a claimant’s GEN. The caller declares `"evm"` or `"ic"` 
 - [Bradbury explorer](https://scan.testnet-chain.genlayer.com/)
 - [Bradbury faucet](https://testnet-faucet.genlayer.foundation)
 - [Studionet](https://studio.genlayer.com)
+- [Studionet explorer](https://explorer-studio.genlayer.com)
 - [Studio dev](https://studio-dev.genlayer.com)
 - [Staking UI](https://stakegen.com/explore/)
 
@@ -261,7 +266,7 @@ The method that sends a claimant’s GEN. The caller declares `"evm"` or `"ic"` 
 | [04 — Security & Threat Model](04-security-threat-model.md) | Threats, mitigations, residual risks. |
 | [05 — Testing Strategy](05-testing-strategy.md) | Test plan and adversarial cases. |
 | [06 — Implementation Plan](06-implementation-plan.md) | Build phases and definition of done. |
-| [07 — Deployment Runbook](07-deployment-runbook.md) | Localnet, Bradbury, deploy, verify. |
+| [07 — Deployment Runbook](07-deployment-runbook.md) | Localnet, Studionet, deploy, verify; Bradbury deferred. |
 | [08 — Portal Submission](08-portal-submission.md) | Evidence and reviewer narrative. |
 | [09 — Roadmap & Grants](09-roadmap-and-grants.md) | v1.1, v1.2, v2, funding. |
 | [10 — Glossary & References](10-glossary-and-references.md) | This document. |

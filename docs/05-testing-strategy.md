@@ -14,7 +14,7 @@
 4. **Test the lie.** Include a schema-valid false verdict and prove the validator rejects it.
 5. **Test the money.** Assert conservation on every path.
 6. **Test the states.** Every transition should have a positive and a negative test.
-7. **Test on Bradbury before claiming deployment.** Direct mode is necessary, not sufficient.
+7. **Test on a live network before claiming deployment.** Direct mode is necessary, not sufficient. Studionet is the current target; Bradbury is deferred.
 
 ---
 
@@ -22,7 +22,7 @@
 
 ```text
                  ┌─────────────────────┐
-                 │  Manual Bradbury    │  5–8 scenarios
+                 │  Manual Studionet   │  5–8 scenarios
                  │  smoke tests        │
                  ├─────────────────────┤
                  │  Integration tests  │  ~10 scenarios
@@ -58,12 +58,12 @@ pytest tests/direct/ -v
 # With coverage
 pytest tests/direct/ --cov=contracts --cov-report=term-missing
 
-# Integration on localnet
+# Integration against glsim (the automated suite)
+python scripts/run_glsim.py --no-browser
 gltest tests/integration/ -v -s --network localnet
 
-# Integration on Bradbury
-# The gltest config key uses an underscore; the CLI alias uses a hyphen.
-gltest tests/integration/ -v -s --network testnet_bradbury
+# Live-network smoke tests are manual for now. Studionet is the current
+# deployment; Bradbury is deferred. A live-network test suite is still pending.
 
 # Lint
 genvm-lint check contracts/Presense.py
@@ -106,7 +106,7 @@ It does **not** prove:
 - real LLM behavior,
 - message delivery semantics.
 
-Those require integration and Bradbury tests.
+Those require integration and live-network tests (Studionet now; Bradbury deferred).
 
 ---
 
@@ -535,7 +535,11 @@ Planned scenarios for a full localnet:
 - Invalid manifest: create reverts.
 - Unauthorized actions: revert.
 
-### 13.2 Bradbury
+### 13.2 Studionet (current)
+
+Bradbury is deferred. The current live deployment is Studionet at
+`0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9`; the live scenarios below have not
+yet been run there.
 
 Run the same scenarios with real network and LLM access:
 
@@ -548,7 +552,7 @@ Run the same scenarios with real network and LLM access:
 
 ### 13.3 What to record
 
-For each Bradbury test:
+For each live-network test:
 
 - Contract address.
 - Agreement ID.
@@ -562,7 +566,7 @@ For each Bradbury test:
 ## 14. Manual smoke test script
 
 ```text
-1. Deploy Presense to Bradbury.
+1. Deploy Presense to Studionet (current) or Bradbury (deferred).
 2. Create agreement agr_smoke_001 with a 0.01 GEN escrow.
 3. Seller accepts.
 4. Seller submits a known-good URL and a known-bad URL.
@@ -641,7 +645,8 @@ Coverage is a proxy, not a goal. The critical requirement is that the adversaria
 - [x] Every state transition has a negative test.
 - [x] Every externally reachable error code has at least one test.
 - [x] Integration tests pass on Localnet (`glsim`; full GenVM localnet pending).
-- [ ] At least five scenarios pass on Bradbury.
+- [ ] At least five scenarios pass on Studionet.
+- [ ] At least five scenarios pass on Bradbury. Deferred.
 - [ ] Test evidence is saved for the portal submission.
 - [ ] CI is green.
 

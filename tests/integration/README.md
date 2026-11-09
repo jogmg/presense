@@ -42,6 +42,7 @@ Copy `gltest.config.yaml.example` to `gltest.config.yaml` and set
 does not require funded accounts; the suite funds both test accounts through
 `sim_fundAccount`. `gltest.config.yaml` is gitignored.
 
-Run the same suite against a full GenVM localnet or Bradbury by pointing
-`--network` at the corresponding configured network. Those live-network runs
-remain part of Phase 7.
+The current suite is glsim-specific: it funds accounts with `sim_fundAccount` and
+advances time with `sim_increaseTime`. Live-network testing on Studionet (current)
+or Bradbury (deferred) needs a separate suite and funded accounts. Studionet is
+the current deployment; those live-network runs remain part of Phase 7.

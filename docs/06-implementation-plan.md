@@ -12,7 +12,7 @@
 2. **Small vertical slices.** Each phase ends with something testable.
 3. **Deterministic before probabilistic.** Get the lifecycle and accounting right before adding LLM judgment.
 4. **Test the lie early.** Build the malicious-leader test in Phase 4, not at the end.
-5. **Deploy only after localnet.** Bradbury is for validation, not first-run debugging.
+5. **Deploy only after localnet.** Studionet is the current hosted target; Bradbury is deferred and is for validation, not first-run debugging.
 
 ---
 
@@ -27,7 +27,7 @@
 | 4     | Subjective + consensus | LLM rubric, validator, adversarial tests       | 2.5 days |
 | 5     | Verdict and settlement | Verdict, payout, challenge, settle, withdraw   | 1.5 days |
 | 6     | Hardening              | Security tests, lint, review, docs sync        | 1 day    |
-| 7     | Deploy and submit      | Bradbury, evidence, portal                     | 1 day    |
+| 7     | Deploy and submit      | Studionet deployment, evidence, portal         | 1 day    |
 
 **Total:** ~11.5 working days. A solo builder can compress this to 10 days by running docs and tests in parallel.
 
@@ -393,16 +393,22 @@ A release candidate with no known critical issues.
 
 ## 10. Phase 7 — Deploy and submit
 
+**Status: deployed to Studionet. Bradbury is deferred.** The contract is live at
+`0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9` on Studionet (chain ID `61999`),
+and the explorer shows a finalized deployment transaction. Live smoke tests and
+the portal submission are still open.
+
 ### Goal
 
-Prove the contract on Bradbury and submit it to the builder portal.
+Prove the contract on Studionet and submit it to the builder portal. Bradbury is
+deferred until the Studionet smoke test and external review are complete.
 
 ### Tasks
 
 - [x] Run the lifecycle and expiry integration suites against `glsim` (`gltest tests/integration -v -s --network localnet`); a full GenVM localnet run remains pending.
-- [ ] Deploy to Bradbury.
-- [ ] Verify the explorer shows the contract.
-- [ ] Run the smoke test:
+- [x] Deploy to Studionet (`0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9`, chain ID `61999`).
+- [x] Verify the explorer shows the contract and a finalized deployment transaction.
+- [ ] Run the smoke test on Studionet:
   - create,
   - accept,
   - submit,
@@ -416,6 +422,7 @@ Prove the contract on Bradbury and submit it to the builder portal.
 - [ ] Add the GitHub repo URL and deployed address.
 - [ ] Submit to category 52.
 - [ ] Respond to review feedback.
+- [ ] Deploy to Bradbury. Deferred for now.
 
 ### Deliverable
 
@@ -423,10 +430,11 @@ A deployed contract, a public repo, and a submitted contribution.
 
 ### Definition of done
 
-- [ ] Bradbury address is public.
-- [ ] At least three lifecycle transactions are confirmed.
-- [ ] At least one evaluation and one settlement are confirmed.
-- [ ] At least one withdrawal is confirmed.
+- [x] Studionet address is public and the explorer link resolves.
+- [ ] At least three lifecycle transactions are confirmed on Studionet.
+- [ ] At least one evaluation and one settlement are confirmed on Studionet.
+- [ ] At least one withdrawal is confirmed on Studionet.
+- [ ] Bradbury deployment and smoke test are complete. Deferred.
 - [ ] The repo README explains the primitive and links the docs.
 - [ ] The portal submission includes the required evidence.
 
@@ -445,7 +453,7 @@ A deployed contract, a public repo, and a submitted contribution.
 | 7   | Phase 4 finish          | Validator + adversarial tests.              |
 | 8   | Phase 5                 | Verdict, challenge, settlement.             |
 | 9   | Phase 6                 | Hardening, review, docs.                    |
-| 10  | Phase 7                 | Bradbury deploy, smoke tests, portal draft. |
+| 10  | Phase 7                 | Studionet deploy, smoke tests, portal draft. |
 
 **Buffer:** Days 11–12 for review feedback and portal submission. Do not compress the consensus tests.
 
@@ -541,16 +549,17 @@ Keep helpers small and pure where possible. The contract file should remain read
 - Prompt injection does not produce a false ACCEPT.
 - Score tolerance is bounded.
 
-### Gate 4 — Before Bradbury
+### Gate 4 — Before Bradbury (deferred)
 
 - Lint passes.
 - Full suite passes.
 - Peer review complete.
 - No critical findings.
+- Studionet deployment verified.
 
 ### Gate 5 — Before portal submission
 
-- Bradbury smoke tests pass.
+- Studionet smoke tests pass.
 - Explorer evidence is saved.
 - Repo and docs are public.
 - Submission narrative matches the code.
@@ -590,7 +599,7 @@ Do **not** cut:
 - evidence quote verification,
 - payout conservation,
 - adversarial tests,
-- Bradbury smoke test.
+- Bradbury smoke test (deferred).
 
 ---
 
@@ -603,7 +612,9 @@ Presense v1 is done when:
 - [x] The schema-valid lie test fails the validator.
 - [x] The prompt-injection test fails the validator.
 - [ ] The full lifecycle passes on Localnet.
-- [ ] At least five scenarios pass on Bradbury.
+- [x] The contract is deployed on Studionet and the explorer link resolves.
+- [ ] At least five scenarios pass on Studionet.
+- [ ] At least five scenarios pass on Bradbury. Deferred.
 - [ ] The repo is public with this documentation.
 - [ ] The portal submission is submitted with the required evidence.
 - [ ] A reviewer can understand the consensus design without reading the code first.

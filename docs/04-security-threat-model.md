@@ -237,7 +237,7 @@ Non-objectives:
 - State is updated before emit to prevent double-spend.
 - Small-amount test recommended.
 
-**Residual risk:** GenLayer message failure semantics may not return value automatically. This is documented and tested on Bradbury.
+**Residual risk:** GenLayer message failure semantics may not return value automatically. This remains a documented runtime risk; live verification is pending (Studionet deployed, Bradbury deferred).
 
 ---
 
@@ -468,7 +468,7 @@ These must hold after every state transition:
 3. Run direct-mode tests with coverage.
 4. Run adversarial tests with a malicious leader mock.
 5. Run property-based payout tests.
-6. Run integration tests on Localnet and Bradbury.
+6. Run integration tests on Localnet and the current live network (Studionet; Bradbury deferred).
 
 ### Peer review
 
@@ -505,7 +505,7 @@ Scope:
 - Added direct-validator tests for wrong decision, wrong objective pass, and subjective pass mismatch.
 - Added exhaustive payout conservation coverage for scores 0–100 and representative escrow sizes.
 - Verified with `genvm-lint check` and the full direct suite: 145 passed, 86% branch coverage.
-- No known critical or high findings remain from this self-review. External peer review, Localnet, and Bradbury validation are still pending; the transparent-redirect and transfer-message semantics remain documented runtime risks.
+- No known critical or high findings remain from this self-review. The contract is deployed on Studionet, but external peer review, the full GenVM localnet run, and live smoke tests remain pending; Bradbury is deferred. The transparent-redirect and transfer-message semantics remain documented runtime risks.
 
 ---
 

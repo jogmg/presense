@@ -6,9 +6,13 @@ Presense is a reusable GenLayer Intelligent Contract primitive that adjudicates 
 
 ## Deployment
 
-| Network   | Chain ID | Contract                                                                                                            |
-| --------- | -------: | ------------------------------------------------------------------------------------------------------------------- |
-| Studionet |  `61999` | [GenLayer Studio Explorer](https://explorer-studio.genlayer.com/address/0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9) |
+Presense currently lives on **Studionet**. Bradbury deployment is deferred.
+
+| Network   | Chain ID | Contract address                             | Explorer                                                                                                            |
+| --------- | -------: | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Studionet |  `61999` | `0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9` | [GenLayer Studio Explorer](https://explorer-studio.genlayer.com/address/0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9) |
+
+The explorer shows a finalized deployment transaction with a `SUCCESS` GenVM result. The live smoke test and Bradbury validation remain pending.
 
 ---
 
@@ -194,7 +198,7 @@ presense/
 | [04 — Security & Threat Model](docs/04-security-threat-model.md) | Prompt injection, evidence poisoning, collusion, residual risks. |
 | [05 — Testing Strategy](docs/05-testing-strategy.md)             | Direct mode, mocks, adversarial tests, integration tests.        |
 | [06 — Implementation Plan](docs/06-implementation-plan.md)       | Phases, tasks, deliverables, definition of done.                 |
-| [07 — Deployment Runbook](docs/07-deployment-runbook.md)         | Local setup, Studio, Bradbury, deploy, verify, troubleshoot.     |
+| [07 — Deployment Runbook](docs/07-deployment-runbook.md)         | Local setup, Studionet, deploy, verify, troubleshoot.            |
 | [08 — Portal Submission](docs/08-portal-submission.md)           | Evidence checklist and reviewer-facing narrative.                |
 | [09 — Roadmap & Grants](docs/09-roadmap-and-grants.md)           | v1.1, project path, integrations, grant milestones.              |
 | [10 — Glossary & References](docs/10-glossary-and-references.md) | Terms and canonical links.                                       |
@@ -260,15 +264,16 @@ pytest tests/direct/ -v
 python scripts/run_glsim.py --no-browser            # terminal 1
 gltest tests/integration/ -v -s --network localnet  # terminal 2
 
-# 5. Deploy to Bradbury (once the interface stabilizes)
-genlayer network set testnet-bradbury
+# 5. Deploy to Studionet (the current deployment target)
+genlayer network set studionet
 genlayer deploy --contract contracts/Presense.py
 ```
 
 > Steps 2 and 3 are runnable without a network. Step 4 uses the bundled `glsim`
-> simulator; a full GenVM localnet (`genlayer up`) or Bradbury node can be used
-> instead. See the [integration test notes](tests/integration/README.md).
-> Step 5 requires a configured deployment network and a stabilized interface.
+> simulator; a full GenVM localnet (`genlayer up`) can be used instead. See the
+> [integration test notes](tests/integration/README.md). Step 5 requires a
+> configured Studionet account. Bradbury is deferred until the live smoke test
+> and external review are complete.
 >
 > On Windows, prefix `genvm-lint` with `$env:PYTHONIOENCODING="utf-8"` if the
 > CLI fails while printing Unicode output.

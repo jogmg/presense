@@ -387,10 +387,13 @@ class _Recipient:
 | **Studio** | Browser IDE, zero setup. | Temporary. | First contract experiments, UI debugging. |
 | **GLSim** | Local JSON-RPC simulator, ~1s startup. | Local. | Fast integration tests without Docker. |
 | **Localnet** | Full GenVM + validators via Docker. | Local. | Consensus and multi-validator testing. |
-| **Studionet** | Hosted stable dev. | Temporary. | Pre-Bradbury integration checks. |
-| **Bradbury** | Production-like testnet with real AI workloads. | Persistent. | Final validation and portal evidence. |
+| **Studionet** | Hosted stable dev. | Temporary. | Current deployment target. |
+| **Bradbury** | Production-like testnet with real AI workloads. | Persistent. | Final validation and portal evidence; deferred. |
 
 **Recommended path:** Studio → GLSim → Localnet → Studionet → Bradbury.
+
+Presense currently stops at Studionet: the contract is deployed there and the
+explorer link resolves. The Bradbury step remains deferred.
 
 ---
 

@@ -22,7 +22,7 @@ Do not start with the product. A frontend over a weak primitive is a demo. A str
 
 | Version | Theme | Key additions | Success signal |
 |---|---|---|---|
-| **v1.0** | Correct primitive | Manifest, objective/subjective checks, validator, escrow, claims, one challenge. | Full lifecycle on Bradbury; adversarial tests pass; portal accepted. |
+| **v1.0** | Correct primitive | Manifest, objective/subjective checks, validator, escrow, claims, one challenge. | Full lifecycle on Studionet; adversarial tests pass; portal accepted. Bradbury deferred. |
 | **v1.1** | Economic hardening | Challenge bonds, slashing to counterparty, evaluation attempts, manifest linter. | Challenges are economically bounded; no spam griefing. |
 | **v1.2** | Integrator kit | TypeScript SDK, React hooks, webhook/indexer, manifest generator, templates. | One external marketplace integrates. |
 | **v2.0** | Multi-party and private evidence | Milestones, multi-party agreements, commit/reveal evidence, ERC-20 escrow, reputation hooks. | Production pilot with a marketplace or grant program. |
@@ -263,7 +263,7 @@ A grant proposal should include:
 
 1. **Problem:** agent work has no neutral acceptance layer.
 2. **Primitive:** the manifest + validator design.
-3. **Traction:** portal submission, Bradbury deployment, tests.
+3. **Traction:** portal submission, Studionet deployment, tests.
 4. **Milestones:** v1.1, v1.2, one integration.
 5. **Budget:** development, audit, integration support.
 6. **Metrics:** agreements created, verdicts, integrations, reuse.
@@ -295,7 +295,7 @@ A grant proposal should include:
 
 - Finish v1 contract.
 - Pass direct tests.
-- Deploy to Bradbury.
+- Deploy to Studionet (current target). Bradbury is deferred.
 - Submit to the portal.
 
 ### Days 15–30

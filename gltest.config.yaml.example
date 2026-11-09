@@ -1,12 +1,16 @@
 # Integration test accounts.
 # Keep keys in environment variables; never commit a funded private key.
 #
-# Copy to `gltest.config.yaml` (gitignored) and set the two variables in `.env`.
-# The localnet simulator (glsim) does not require funded accounts; a full
-# GenVM localnet or Bradbury deployment does.
+# Copy to `gltest.config.yaml` (gitignored) and set the variables in `.env`.
+# The localnet simulator (glsim) does not require funded accounts; Studionet
+# (current deployment) or Bradbury (deferred) does.
 networks:
   default: localnet
   localnet:
+    accounts:
+      - "${ACCOUNT_PRIVATE_KEY_1}"
+      - "${ACCOUNT_PRIVATE_KEY_2}"
+  studionet:
     accounts:
       - "${ACCOUNT_PRIVATE_KEY_1}"
       - "${ACCOUNT_PRIVATE_KEY_2}"

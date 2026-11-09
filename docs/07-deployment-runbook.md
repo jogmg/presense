@@ -2,7 +2,7 @@
 
 **Project:** Presense
 **Version:** 0.1
-**Purpose:** Exact steps to take Presense from a local repository to a verified Bradbury deployment.
+**Purpose:** Exact steps to take Presense from a local repository to a verified Studionet deployment. Bradbury is deferred.
 
 ---
 
@@ -16,7 +16,7 @@
 | Git | any recent | Version control. |
 | Docker | 26+ | Optional; local Studio with full GenVM. |
 | GenLayer CLI | current | Deploy, call, inspect. |
-| A funded account | Bradbury GEN | Deployment and test escrow. |
+| A funded account | Studionet GEN (current); Bradbury GEN when that phase resumes | Deployment and test escrow. |
 
 ### 1.1 Install the CLI
 
@@ -59,7 +59,7 @@ genvm-lint check contracts/Presense.py
 pytest tests/direct/ -v
 ```
 
-Do not proceed to Bradbury until both pass.
+Do not proceed past Studionet until both pass.
 
 `tests/conftest.py` includes two compatibility shims for the pinned
 `genlayer-test` release: a fallback to GenVM's renamed runner bundle and a
@@ -73,11 +73,14 @@ disable them after upgrading the toolchain.
 | Network | Alias | Chain ID | RPC | Explorer | Use |
 |---|---|---|---|---|---|
 | Localnet | `localnet` | 61127 | `http://localhost:4000/api` | `http://localhost:8080` | Full local GenVM. |
-| Studionet | `studionet` | 61999 | `https://studio.genlayer.com/api` | `https://explorer-studio.genlayer.com` | Hosted stable dev. |
+| Studionet | `studionet` | 61999 | `https://studio.genlayer.com/api` | `https://explorer-studio.genlayer.com` | Current deployment target. |
 | Studio dev | `studio-dev` | 61997 | `https://studio-dev.genlayer.com/api` | `https://explorer-studio-dev.genlayer.com` | Release-candidate validation only. |
-| Bradbury | `testnet-bradbury` | 4221 | Use the Phase 2 GenLayer node RPC from the release announcement, or your own qualified node. | `https://scan.testnet-chain.genlayer.com/` | Production-like testnet. |
+| Bradbury | `testnet-bradbury` | 4221 | Use the Phase 2 GenLayer node RPC from the release announcement, or your own qualified node. | `https://scan.testnet-chain.genlayer.com/` | Deferred. |
 
-### 2.1 Bradbury endpoints
+### 2.1 Bradbury endpoints (deferred)
+
+These endpoints are recorded for the deferred phase; Studionet is the current
+target.
 
 | Setting | Value |
 |---|---|
@@ -201,7 +204,7 @@ In another terminal:
 gltest tests/integration/ -v -s
 ```
 
-GLSim is fast but runs the Python runner natively, not inside GenVM. Use it for iteration; validate on localnet before Bradbury.
+GLSim is fast but runs the Python runner natively, not inside GenVM. Use it for iteration; validate on localnet before Studionet (current) or Bradbury (deferred).
 
 ### 4.5 Localnet (full GenVM)
 
@@ -221,24 +224,39 @@ Run integration tests:
 gltest tests/integration/ -v -s --network localnet
 ```
 
-### 4.6 Studionet (hosted)
+### 4.6 Studionet (current deployment)
 
 ```bash
 genlayer network set studionet
 genlayer deploy --contract contracts/Presense.py
 ```
 
-Use Studionet for quick hosted checks before Bradbury. State is temporary.
+Presense is deployed on Studionet:
+
+| Field | Value |
+|---|---|
+| Network | Studionet |
+| Chain ID | `61999` |
+| Contract address | `0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9` |
+| Explorer | [GenLayer Studio Explorer](https://explorer-studio.genlayer.com/address/0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9) |
+| Deployment status | Finalized; GenVM result `SUCCESS` |
+
+Studionet state is temporary. Keep the address and explorer link in the portal
+evidence before it is reset. Bradbury remains deferred.
 
 ---
 
-## 5. Deploy to Bradbury
+## 5. Deploy to Bradbury (deferred)
+
+Bradbury is deferred. Studionet is the current deployment; use this section only
+when the project resumes the persistent testnet phase.
 
 ### 5.1 Pre-deploy checklist
 
 - [x] `genvm-lint check` passes.
 - [x] Direct tests pass.
 - [x] Localnet integration tests pass against `glsim` (full GenVM localnet pending).
+- [x] Studionet deployment is verified and recorded.
 - [ ] Bradbury account is funded.
 - [ ] `genlayer network info` shows the expected chain.
 - [x] The contract has no constructor arguments.
@@ -306,6 +324,8 @@ Minimal shape:
 ```ts
 import fs from "node:fs";
 import { createClient } from "genlayer-js";
+// Bradbury template. For the current Studionet deployment, use the matching
+// chain export from "genlayer-js/chains".
 import { testnetBradbury } from "genlayer-js/chains";
 
 // Use the funded account pattern from the GenLayer boilerplate.
@@ -330,7 +350,11 @@ Replace `fundedAccount` with the boilerplate’s account setup. The exact helper
 
 ---
 
-## 7. Smoke test on Bradbury
+## 7. Smoke test on Studionet (current) or Bradbury (deferred)
+
+**Status: not yet run.** Studionet is deployed and the explorer link resolves;
+the live lifecycle smoke test remains pending. Use the same flow on Bradbury
+when that phase resumes.
 
 Use a small escrow (e.g., 0.01 GEN). Do not test with more than you are prepared to lose.
 
@@ -506,7 +530,7 @@ This evidence goes into the portal submission.
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `genlayer deploy` uses the wrong chain | Network alias not set. | `genlayer network set testnet-bradbury`; `genlayer network info`. |
+| `genlayer deploy` uses the wrong chain | Network alias not set. | `genlayer network set studionet` (current) or `testnet-bradbury` (deferred); `genlayer network info`. |
 | `gen_call` fails | Using the L2 chain RPC instead of a GenLayer node RPC. | Use the Phase 2 node RPC or the CLI alias. |
 | Deployment reverts on manifest | Manifest validation failed. | Run the manifest linter; check duplicate keys, weights, URLs. |
 | Evaluation returns `UNDETERMINED` | Evidence unavailable or validators disagree. | Check evidence URLs, retry, add alternative sources. |
@@ -514,7 +538,7 @@ This evidence goes into the portal submission.
 | Settlement rejected | Window still open. | Wait for `evaluated_at + challenge_window`. |
 | Withdraw reverts | No claim or bad kind. | Check `get_claim`; use `"evm"` or `"ic"`. |
 | Transaction stuck | Consensus/fee issue. | `genlayer receipt <hash>`, `genlayer trace <hash>`, check fees. |
-| Explorer shows no contract | Wrong explorer or wrong chain. | Use `scan.testnet-chain.genlayer.com` and chain ID 4221. |
+| Explorer shows no contract | Wrong explorer or wrong chain. | Use `explorer-studio.genlayer.com` with chain ID 61999 for Studionet, or `scan.testnet-chain.genlayer.com` with chain ID 4221 for Bradbury. |
 | Faucet does not credit | Wrong address or faucet network. | Recheck address; confirm faucet target. |
 | Lint fails on storage | Used `dict`/`list`. | Use `TreeMap`/`DynArray`. |
 | Lint fails on nondet | Web/LLM call outside a nondet block. | Move it into `run_nondet_unsafe` or the appropriate block. |
@@ -588,7 +612,9 @@ For a stuck agreement:
 - [x] Lint clean.
 - [x] Direct tests pass.
 - [x] Localnet integration passes against `glsim` (full GenVM localnet pending).
-- [ ] Bradbury smoke test passes.
+- [x] Studionet deployment verified (address and explorer link recorded).
+- [ ] Studionet smoke test passes.
+- [ ] Bradbury smoke test passes. Deferred.
 - [x] No admin keys.
 - [x] No upgrade proxy.
 - [x] No `dict`/`list` storage.
@@ -610,8 +636,8 @@ For a stuck agreement:
 Once the smoke test is complete, collect:
 
 - GitHub repo URL,
-- contract address,
-- deploy transaction hash,
+- Studionet contract address (`0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9`),
+- deploy transaction hash from the Studionet explorer,
 - explorer link,
 - verdict JSON,
 - test summary,

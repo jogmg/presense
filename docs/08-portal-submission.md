@@ -85,7 +85,7 @@ The portal requires both a code artifact and a deployed contract. Prepare all of
   - limitations.
 - [ ] `contracts/Presense.py`.
 - [ ] `tests/direct/` with the adversarial tests.
-- [ ] `tests/integration/` with localnet/Bradbury tests.
+- [ ] `tests/integration/` with Localnet/glsim tests (Studionet live tests pending).
 - [ ] `docs/` with this spec pack.
 - [ ] `examples/manifest.weather-api.json`.
 - [ ] `LICENSE`.
@@ -93,9 +93,9 @@ The portal requires both a code artifact and a deployed contract. Prepare all of
 
 ### 3.2 Deployed contract
 
-- [ ] Bradbury contract address.
-- [ ] Explorer link: `https://scan.testnet-chain.genlayer.com/address/<address>`.
-- [ ] Deploy transaction hash.
+- [x] Studionet contract address: `0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9`.
+- [x] Explorer link: `https://explorer-studio.genlayer.com/address/0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9`.
+- [ ] Deploy transaction hash copied from the explorer.
 - [ ] At least one create transaction.
 - [ ] At least one accept transaction.
 - [ ] At least one submit transaction.
@@ -103,6 +103,7 @@ The portal requires both a code artifact and a deployed contract. Prepare all of
 - [ ] At least one settle transaction.
 - [ ] At least one withdraw transaction.
 - [ ] Verdict JSON.
+- [ ] Bradbury address. Deferred.
 
 ### 3.3 Consensus evidence
 
@@ -117,8 +118,9 @@ The portal requires both a code artifact and a deployed contract. Prepare all of
 
 - [ ] `pytest tests/direct/ -v` output.
 - [ ] Coverage summary.
-- [ ] Localnet integration output.
-- [ ] Bradbury smoke test summary.
+- [x] Localnet integration output.
+- [ ] Studionet smoke test summary.
+- [ ] Bradbury smoke test summary. Deferred.
 - [ ] Any known failures and their status.
 
 ### 3.5 Demo evidence
@@ -185,7 +187,7 @@ The acceptance question is subjective and evidence-based. A normal smart contrac
 
 ## Status
 
-- Contract: deployed on Bradbury at 0x...
+- Contract: deployed on Studionet at `0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9`; Bradbury deferred.
 - Tests: direct-mode suite passing; adversarial leader and prompt-injection tests passing.
 - Docs: full spec pack in the repo.
 - Limitations: one buyer/seller, one escrow, one challenge, public evidence only.
@@ -269,7 +271,7 @@ The primitive is open source. Integrators can pay per evaluation, white-label th
 - Hide the LLM dependency.
 - Overstate test coverage.
 - Use screenshots without explorer links.
-- Submit before the Bradbury smoke test passes.
+- Submit before the current-network smoke test passes.
 
 ---
 
@@ -283,9 +285,10 @@ The primitive is open source. Integrators can pay per evaluation, white-label th
    - No secrets.
 
 2. **Finalize the deployment**
-   - Bradbury address confirmed.
-   - Explorer source verified.
+   - Studionet address confirmed.
+   - Explorer link verified.
    - Smoke test transactions saved.
+   - Bradbury deployment deferred.
 
 3. **Prepare the evidence pack**
    - Create a `submission/` folder or a gist with:
@@ -325,7 +328,7 @@ The primitive is open source. Integrators can pay per evaluation, white-label th
 ## 8. Post-submission
 
 - Monitor the review status.
-- Keep the Bradbury contract online.
+- Keep the Studionet contract online.
 - Do not change the repo in a way that invalidates the evidence.
 - If you deploy a v2, publish the new address and keep v1 online.
 - Save the submission ID and reviewer feedback.
@@ -337,8 +340,8 @@ The primitive is open source. Integrators can pay per evaluation, white-label th
 
 - [ ] Category rules still match this document.
 - [ ] Required evidence is still `(Studio OR repo) AND deployed explorer contract`.
-- [ ] The contract address is on Bradbury, not a localnet.
-- [ ] The explorer link resolves.
+- [x] The contract address is on Studionet (current deployment), not a localnet. Bradbury is deferred.
+- [x] The explorer link resolves.
 - [ ] The repo is public.
 - [ ] The README explains the consensus design.
 - [ ] The adversarial test is visible.
