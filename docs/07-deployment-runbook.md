@@ -239,10 +239,14 @@ Presense is deployed on Studionet:
 | Chain ID | `61999` |
 | Contract address | `0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9` |
 | Explorer | [GenLayer Studio Explorer](https://explorer-studio.genlayer.com/address/0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9) |
+| Deploy transaction | [`0xdad3d744f8ae7c3cbd5314e58104aa22bcc00d36ef9b34f64fc9f5a8e81cc4c9`](https://explorer-studio.genlayer.com/tx/0xdad3d744f8ae7c3cbd5314e58104aa22bcc00d36ef9b34f64fc9f5a8e81cc4c9) |
 | Deployment status | Finalized; GenVM result `SUCCESS` |
+| Smoke test | Passed 2026-11-09; six scenarios |
 
 Studionet state is temporary. Keep the address and explorer link in the portal
-evidence before it is reset. Bradbury remains deferred.
+evidence before it is reset. Bradbury remains deferred. The smoke-test evidence
+is in
+[`docs/evidence/studionet-smoke-2026-11-09.md`](evidence/studionet-smoke-2026-11-09.md).
 
 ---
 
@@ -352,11 +356,26 @@ Replace `fundedAccount` with the boilerplate’s account setup. The exact helper
 
 ## 7. Smoke test on Studionet (current) or Bradbury (deferred)
 
-**Status: not yet run.** Studionet is deployed and the explorer link resolves;
-the live lifecycle smoke test remains pending. Use the same flow on Bradbury
-when that phase resumes.
+**Status: passed on Studionet 2026-11-09.** Six objective-only scenarios ran end
+to end: accept, partial, reject, challenge, expiry, and cancellation. Every
+receipt reached `FINALIZED` with a `SUCCESS` GenVM result. Evidence and
+transaction hashes are in
+[`docs/evidence/studionet-smoke-2026-11-09.md`](evidence/studionet-smoke-2026-11-09.md).
+Use the same flow on Bradbury when that phase resumes.
 
-Use a small escrow (e.g., 0.01 GEN). Do not test with more than you are prepared to lose.
+The repeatable runner is `scripts/studionet_smoke.py`:
+
+```bash
+python scripts/studionet_smoke.py --phase init
+python scripts/studionet_smoke.py --phase finalize   # after the one-hour windows
+python scripts/studionet_smoke.py --phase summary
+```
+
+Studionet enforces the one-hour minimum challenge window and deadline in real
+time, so the run is split into two phases.
+
+Use a small escrow (e.g., 0.001–0.01 GEN). Do not test with more than you are
+prepared to lose.
 
 ### 7.1 Create
 
@@ -613,7 +632,7 @@ For a stuck agreement:
 - [x] Direct tests pass.
 - [x] Localnet integration passes against `glsim` (full GenVM localnet pending).
 - [x] Studionet deployment verified (address and explorer link recorded).
-- [ ] Studionet smoke test passes.
+- [x] Studionet smoke test passes (six scenarios, 2026-11-09).
 - [ ] Bradbury smoke test passes. Deferred.
 - [x] No admin keys.
 - [x] No upgrade proxy.
@@ -627,22 +646,26 @@ For a stuck agreement:
 - [x] Challenge window tested.
 - [x] Withdraw tested for both `evm` and `ic`.
 - [x] README links the docs.
-- [ ] Portal evidence saved.
+- [x] Portal evidence saved.
 
 ---
 
 ## 12. Handoff to portal submission
 
-Once the smoke test is complete, collect:
+The smoke test is complete. The evidence pack contains:
 
-- GitHub repo URL,
-- Studionet contract address (`0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9`),
-- deploy transaction hash from the Studionet explorer,
+- GitHub repo URL: `https://github.com/jogmg/presense`,
+- Studionet contract address: `0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9`,
+- deploy transaction:
+  [`0xdad3d744f8ae7c3cbd5314e58104aa22bcc00d36ef9b34f64fc9f5a8e81cc4c9`](https://explorer-studio.genlayer.com/tx/0xdad3d744f8ae7c3cbd5314e58104aa22bcc00d36ef9b34f64fc9f5a8e81cc4c9),
 - explorer link,
 - verdict JSON,
-- test summary,
+- test summary and transaction hashes,
 - architecture diagram,
 - consensus explanation.
+
+The detailed evidence is in
+[`docs/evidence/studionet-smoke-2026-11-09.md`](evidence/studionet-smoke-2026-11-09.md).
 
 Then follow [08 — Portal Submission](08-portal-submission.md).
 

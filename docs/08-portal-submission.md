@@ -74,8 +74,8 @@ The portal requires both a code artifact and a deployed contract. Prepare all of
 
 ### 3.1 Code artifact
 
-- [ ] Public GitHub repository.
-- [ ] `README.md` with:
+- [x] Public GitHub repository: `https://github.com/jogmg/presense`.
+- [x] `README.md` with:
   - project summary,
   - problem,
   - architecture diagram,
@@ -83,53 +83,53 @@ The portal requires both a code artifact and a deployed contract. Prepare all of
   - test commands,
   - consensus explanation,
   - limitations.
-- [ ] `contracts/Presense.py`.
-- [ ] `tests/direct/` with the adversarial tests.
-- [ ] `tests/integration/` with Localnet/glsim tests (Studionet live tests pending).
-- [ ] `docs/` with this spec pack.
-- [ ] `examples/manifest.weather-api.json`.
-- [ ] `LICENSE`.
-- [ ] No secrets, private keys, or `.env` files.
+- [x] `contracts/Presense.py`.
+- [x] `tests/direct/` with the adversarial tests.
+- [x] `tests/integration/` with Localnet/glsim tests and the Studionet smoke runner.
+- [x] `docs/` with this spec pack and the Studionet evidence.
+- [x] `examples/manifest.weather-api.json`.
+- [x] `LICENSE`.
+- [x] No secrets, private keys, or `.env` files.
 
 ### 3.2 Deployed contract
 
 - [x] Studionet contract address: `0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9`.
 - [x] Explorer link: `https://explorer-studio.genlayer.com/address/0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9`.
-- [ ] Deploy transaction hash copied from the explorer.
-- [ ] At least one create transaction.
-- [ ] At least one accept transaction.
-- [ ] At least one submit transaction.
-- [ ] At least one evaluate transaction.
-- [ ] At least one settle transaction.
-- [ ] At least one withdraw transaction.
-- [ ] Verdict JSON.
+- [x] Deploy transaction hash copied from the explorer: `0xdad3d744f8ae7c3cbd5314e58104aa22bcc00d36ef9b34f64fc9f5a8e81cc4c9`.
+- [x] At least one create transaction.
+- [x] At least one accept transaction.
+- [x] At least one submit transaction.
+- [x] At least one evaluate transaction.
+- [x] At least one settle transaction.
+- [x] At least one withdraw transaction.
+- [x] Verdict JSON.
 - [ ] Bradbury address. Deferred.
 
 ### 3.3 Consensus evidence
 
-- [ ] Explanation of the leader/validator split.
-- [ ] The equivalence table (which fields are compared).
-- [ ] The evidence-quote verification rule.
-- [ ] A test showing a schema-valid lie is rejected.
-- [ ] A test showing prompt injection does not produce a false ACCEPT.
-- [ ] The `UNDETERMINED` policy.
+- [x] Explanation of the leader/validator split.
+- [x] The equivalence table (which fields are compared).
+- [x] The evidence-quote verification rule.
+- [x] A test showing a schema-valid lie is rejected.
+- [x] A test showing prompt injection does not produce a false ACCEPT.
+- [x] The `UNDETERMINED` policy.
 
 ### 3.4 Test evidence
 
-- [ ] `pytest tests/direct/ -v` output.
-- [ ] Coverage summary.
+- [x] `pytest tests/direct/ -v` output.
+- [x] Coverage summary.
 - [x] Localnet integration output.
-- [ ] Studionet smoke test summary.
+- [x] Studionet smoke test summary.
 - [ ] Bradbury smoke test summary. Deferred.
-- [ ] Any known failures and their status.
+- [x] Any known failures and their status.
 
 ### 3.5 Demo evidence
 
-- [ ] A sample manifest.
-- [ ] A sample verdict.
+- [x] A sample manifest.
+- [x] A sample verdict.
 - [ ] A short screen recording or screenshots of the Studio flow.
-- [ ] A sequence diagram.
-- [ ] A “what happens on a bad delivery” example.
+- [x] A sequence diagram.
+- [x] A “what happens on a bad delivery” example.
 
 ---
 
@@ -189,15 +189,17 @@ The acceptance question is subjective and evidence-based. A normal smart contrac
 
 - Contract: deployed on Studionet at `0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9`; Bradbury deferred.
 - Tests: direct-mode suite passing; adversarial leader and prompt-injection tests passing.
-- Docs: full spec pack in the repo.
-- Limitations: one buyer/seller, one escrow, one challenge, public evidence only.
+- Live: six scenarios passed on Studionet on 2026-11-09 (accept, partial, reject, challenge, expiry, cancellation).
+- Docs: full spec pack plus `docs/evidence/studionet-smoke-2026-11-09.md`.
+- Limitations: one buyer/seller, one escrow, one challenge, public evidence only; no rescue path for value attached to a failed payable call.
 
 ## Links
 
-- Repo: ...
-- Explorer: ...
-- Demo manifest: ...
-- Demo verdict: ...
+- Repo: https://github.com/jogmg/presense
+- Explorer: https://explorer-studio.genlayer.com/address/0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9
+- Deploy transaction: https://explorer-studio.genlayer.com/tx/0xdad3d744f8ae7c3cbd5314e58104aa22bcc00d36ef9b34f64fc9f5a8e81cc4c9
+- Demo manifest: `examples/manifest.weather-api.json`
+- Demo verdict: `docs/evidence/studionet-smoke-2026-11-09.md`
 ```
 
 ---
@@ -277,6 +279,10 @@ The primitive is open source. Integrators can pay per evaluation, white-label th
 
 ## 7. Submission steps
 
+**Status: submitted.** The contribution was submitted under Intelligent
+Contracts (portal type `52`). Review feedback is pending; the evidence pack and
+the deployed address remain stable.
+
 1. **Finalize the repo**
    - README complete.
    - Docs linked.
@@ -342,13 +348,13 @@ The primitive is open source. Integrators can pay per evaluation, white-label th
 - [ ] Required evidence is still `(Studio OR repo) AND deployed explorer contract`.
 - [x] The contract address is on Studionet (current deployment), not a localnet. Bradbury is deferred.
 - [x] The explorer link resolves.
-- [ ] The repo is public.
-- [ ] The README explains the consensus design.
-- [ ] The adversarial test is visible.
-- [ ] The prompt-injection test is visible.
-- [ ] The verdict JSON is included.
-- [ ] The limitations are stated.
-- [ ] No secrets are in the repo.
+- [x] The repo is public.
+- [x] The README explains the consensus design.
+- [x] The adversarial test is visible.
+- [x] The prompt-injection test is visible.
+- [x] The verdict JSON is included.
+- [x] The limitations are stated.
+- [x] No secrets are in the repo.
 - [ ] The submission is within the weekly limit.
 
 ---

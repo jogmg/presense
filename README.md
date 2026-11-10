@@ -12,7 +12,7 @@ Presense currently lives on **Studionet**. Bradbury deployment is deferred.
 | --------- | -------: | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Studionet |  `61999` | `0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9` | [GenLayer Studio Explorer](https://explorer-studio.genlayer.com/address/0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9) |
 
-The explorer shows a finalized deployment transaction with a `SUCCESS` GenVM result. The live smoke test and Bradbury validation remain pending.
+The explorer shows a finalized deployment transaction with a `SUCCESS` GenVM result. Six live scenarios (accept, partial, reject, challenge, expiry, and cancellation) pass on Studionet; see the [smoke-test evidence](docs/evidence/studionet-smoke-2026-11-09.md). Bradbury validation and external peer review remain pending.
 
 ---
 
@@ -58,6 +58,28 @@ gltest tests/integration -v -s --network localnet   # terminal 2
 
 A plain `pytest` run skips the integration tests, so it never needs a live
 network.
+
+### Live smoke test (Studionet)
+
+The live run used objective-only manifests, so it needed no LLM provider. Six
+scenarios passed against the deployed contract: accept, partial, reject,
+challenge, expiry refund, and cancellation refund. Every transaction reached
+`FINALIZED` with a `SUCCESS` GenVM result, and the funded balances reconcile to
+the wei.
+
+- Evidence: [docs/evidence/studionet-smoke-2026-11-09.md](docs/evidence/studionet-smoke-2026-11-09.md)
+- Runner: [scripts/studionet_smoke.py](scripts/studionet_smoke.py)
+- Deploy transaction: [`0xdad3d744…e81cc4c9`](https://explorer-studio.genlayer.com/tx/0xdad3d744f8ae7c3cbd5314e58104aa22bcc00d36ef9b34f64fc9f5a8e81cc4c9)
+
+```bash
+python scripts/studionet_smoke.py --phase init
+python scripts/studionet_smoke.py --phase finalize   # after the one-hour windows
+python scripts/studionet_smoke.py --phase summary
+```
+
+Studionet enforces the one-hour minimum challenge window and deadline in real
+time, so the run is intentionally split into two phases. Credentials are read
+from a gitignored `.presense-smoke/credentials.json`.
 
 `tests/conftest.py` carries two narrow shims for `genlayer-test 0.29.2`:
 a fallback for GenVM's renamed runner bundle, and a Windows-safe temp-file
@@ -272,8 +294,8 @@ genlayer deploy --contract contracts/Presense.py
 > Steps 2 and 3 are runnable without a network. Step 4 uses the bundled `glsim`
 > simulator; a full GenVM localnet (`genlayer up`) can be used instead. See the
 > [integration test notes](tests/integration/README.md). Step 5 requires a
-> configured Studionet account. Bradbury is deferred until the live smoke test
-> and external review are complete.
+> configured Studionet account. The Studionet smoke test has passed; Bradbury
+> remains deferred until external review is complete.
 >
 > On Windows, prefix `genvm-lint` with `$env:PYTHONIOENCODING="utf-8"` if the
 > CLI fails while printing Unicode output.

@@ -537,18 +537,42 @@ Planned scenarios for a full localnet:
 
 ### 13.2 Studionet (current)
 
-Bradbury is deferred. The current live deployment is Studionet at
-`0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9`; the live scenarios below have not
-yet been run there.
+Bradbury is deferred. The live deployment is Studionet at
+`0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9`.
 
-Run the same scenarios with real network and LLM access:
+**Status: passed on 2026-11-09.** Six objective-only scenarios ran end to end
+against the live contract. No LLM provider was needed because every criterion
+used `http_status`. All transaction receipts reached `FINALIZED` with leader
+`execution_result=SUCCESS`.
 
-- Use a real public evidence page you control.
-- Use a small escrow (e.g., 0.01 GEN).
-- Confirm the verdict and payout.
-- Confirm `withdraw` works for an EOA.
-- Confirm the explorer shows the contract and transactions.
-- Save transaction hashes for the portal submission.
+| Scenario | Decision | Score | Payout (buyer / seller) | Final status |
+|---|---|---:|---|---|
+| Accept | `ACCEPT` | 100 | `0` / `0.001 GEN` | `SETTLED` |
+| Partial | `PARTIAL` | 50 | `0.0005 GEN` / `0.0005 GEN` | `SETTLED` |
+| Reject | `REJECT` | 0 | `0.001 GEN` / `0` | `SETTLED` |
+| Challenge | `ACCEPT` | 100 | `0` / `0.001 GEN` | `SETTLED` |
+| Expiry | refund | — | `0.001 GEN` / `0` | `EXPIRED` |
+| Cancellation | refund | — | `0.001 GEN` / `0` | `CANCELLED` |
+
+Evidence, transaction hashes, verdict JSON, and the final balance
+reconciliation are in
+[`docs/evidence/studionet-smoke-2026-11-09.md`](evidence/studionet-smoke-2026-11-09.md).
+The runner is `scripts/studionet_smoke.py`.
+
+Studionet enforces the one-hour minimum challenge window and deadline in real
+time (`sim_increaseTime` and `sim_getTime` are unavailable), so the run is split
+into `init` and `finalize` phases.
+
+Two caveats from the run are recorded in the evidence:
+
+- A failed payable `create_agreement` left its attached `0.001 GEN` in the
+  contract; v1 has no rescue path. The retry succeeded and the tracked escrow
+  returned to zero.
+- Claims are global per address, so claim snapshots accumulate across
+  agreements. Per-agreement payouts are read from the verdict.
+
+The live run does not exercise a provider-backed `llm_rubric` call. That path is
+covered by the direct-mode subjective, validator, and settlement tests.
 
 ### 13.3 What to record
 
@@ -564,6 +588,13 @@ For each live-network test:
 ---
 
 ## 14. Manual smoke test script
+
+**Status:** executed against Studionet on 2026-11-09 with objective-only
+manifests. The six scenarios were accept, partial, reject, challenge, expiry,
+and cancellation. Evidence:
+[`docs/evidence/studionet-smoke-2026-11-09.md`](evidence/studionet-smoke-2026-11-09.md).
+
+The steps below remain the manual walkthrough for a new deployment.
 
 ```text
 1. Deploy Presense to Studionet (current) or Bradbury (deferred).
@@ -645,9 +676,9 @@ Coverage is a proxy, not a goal. The critical requirement is that the adversaria
 - [x] Every state transition has a negative test.
 - [x] Every externally reachable error code has at least one test.
 - [x] Integration tests pass on Localnet (`glsim`; full GenVM localnet pending).
-- [ ] At least five scenarios pass on Studionet.
+- [x] At least five scenarios pass on Studionet.
 - [ ] At least five scenarios pass on Bradbury. Deferred.
-- [ ] Test evidence is saved for the portal submission.
+- [x] Test evidence is saved for the portal submission.
 - [ ] CI is green.
 
 Three failure branches are defensive state invariants and are intentionally not

@@ -237,7 +237,7 @@ Non-objectives:
 - State is updated before emit to prevent double-spend.
 - Small-amount test recommended.
 
-**Residual risk:** GenLayer message failure semantics may not return value automatically. This remains a documented runtime risk; live verification is pending (Studionet deployed, Bradbury deferred).
+**Residual risk:** GenLayer message failure semantics may not return value automatically. The Studionet smoke test exercised successful buyer and seller withdrawals (both `SUCCESS`, with the child transfer credited), but a failed payable call was also observed to retain its attached value in the contract: the first expiry `create_agreement` returned `E_DEADLINE_INVALID` and left `0.001 GEN` in the contract, with no rescue path in v1. This remains a documented runtime and value-handling risk. Bradbury is deferred.
 
 ---
 
@@ -505,7 +505,7 @@ Scope:
 - Added direct-validator tests for wrong decision, wrong objective pass, and subjective pass mismatch.
 - Added exhaustive payout conservation coverage for scores 0–100 and representative escrow sizes.
 - Verified with `genvm-lint check` and the full direct suite: 145 passed, 86% branch coverage.
-- No known critical or high findings remain from this self-review. The contract is deployed on Studionet, but external peer review, the full GenVM localnet run, and live smoke tests remain pending; Bradbury is deferred. The transparent-redirect and transfer-message semantics remain documented runtime risks.
+- No known critical or high findings remain from this self-review. The contract is deployed on Studionet, and the six-scenario smoke test passed there on 2026-11-09. External peer review and the full GenVM localnet run remain pending; Bradbury is deferred. The transparent-redirect, transfer-message, and failed-payable-value semantics remain documented runtime risks.
 
 ---
 

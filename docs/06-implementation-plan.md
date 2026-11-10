@@ -393,34 +393,37 @@ A release candidate with no known critical issues.
 
 ## 10. Phase 7 — Deploy and submit
 
-**Status: deployed to Studionet. Bradbury is deferred.** The contract is live at
-`0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9` on Studionet (chain ID `61999`),
-and the explorer shows a finalized deployment transaction. Live smoke tests and
-the portal submission are still open.
+**Status: deployed to Studionet, smoke-tested, and submitted.** The contract is
+live at `0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9` on Studionet (chain ID
+`61999`). The explorer shows a finalized deployment transaction, six live
+scenarios have completed, and the contribution was submitted to the portal.
+Bradbury is deferred; external peer review is still pending.
 
 ### Goal
 
 Prove the contract on Studionet and submit it to the builder portal. Bradbury is
-deferred until the Studionet smoke test and external review are complete.
+deferred until external review is complete.
 
 ### Tasks
 
 - [x] Run the lifecycle and expiry integration suites against `glsim` (`gltest tests/integration -v -s --network localnet`); a full GenVM localnet run remains pending.
 - [x] Deploy to Studionet (`0x1905d0Af801cc32D817Eed228b81902Dd1eB7DA9`, chain ID `61999`).
 - [x] Verify the explorer shows the contract and a finalized deployment transaction.
-- [ ] Run the smoke test on Studionet:
+- [x] Run the smoke test on Studionet:
   - create,
   - accept,
   - submit,
   - evaluate,
   - settle,
   - withdraw.
-- [ ] Run a challenge scenario.
-- [ ] Run an expiry scenario.
-- [ ] Save transaction hashes and verdict JSON.
-- [ ] Write the portal description.
-- [ ] Add the GitHub repo URL and deployed address.
-- [ ] Submit to category 52.
+- [x] Run accept, partial, and reject scenarios.
+- [x] Run a challenge scenario.
+- [x] Run an expiry scenario.
+- [x] Run a cancellation scenario.
+- [x] Save transaction hashes and verdict JSON in [`docs/evidence/studionet-smoke-2026-11-09.md`](evidence/studionet-smoke-2026-11-09.md).
+- [x] Write the portal description.
+- [x] Add the GitHub repo URL and deployed address.
+- [x] Submit to category 52.
 - [ ] Respond to review feedback.
 - [ ] Deploy to Bradbury. Deferred for now.
 
@@ -431,12 +434,12 @@ A deployed contract, a public repo, and a submitted contribution.
 ### Definition of done
 
 - [x] Studionet address is public and the explorer link resolves.
-- [ ] At least three lifecycle transactions are confirmed on Studionet.
-- [ ] At least one evaluation and one settlement are confirmed on Studionet.
-- [ ] At least one withdrawal is confirmed on Studionet.
+- [x] At least three lifecycle transactions are confirmed on Studionet.
+- [x] At least one evaluation and one settlement are confirmed on Studionet.
+- [x] At least one withdrawal is confirmed on Studionet.
 - [ ] Bradbury deployment and smoke test are complete. Deferred.
-- [ ] The repo README explains the primitive and links the docs.
-- [ ] The portal submission includes the required evidence.
+- [x] The repo README explains the primitive and links the docs.
+- [x] The portal submission includes the required evidence.
 
 ---
 

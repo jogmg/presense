@@ -21,6 +21,7 @@ htmlcov/
 gltest.config.yaml
 deployments.local.json
 artifacts/
+.presense-smoke/
 !gltest.config.yaml.example
 
 # Editors and OS
