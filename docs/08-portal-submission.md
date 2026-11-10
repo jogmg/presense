@@ -127,7 +127,6 @@ The portal requires both a code artifact and a deployed contract. Prepare all of
 
 - [x] A sample manifest.
 - [x] A sample verdict.
-- [ ] A short screen recording or screenshots of the Studio flow.
 - [x] A sequence diagram.
 - [x] A “what happens on a bad delivery” example.
 
